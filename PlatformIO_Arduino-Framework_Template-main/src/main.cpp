@@ -1,19 +1,22 @@
-
-// Import required libraries
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
 #include "DHT20.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "Adafruit_MQTT.h"
+#include "Adafruit_MQTT_Client.h"
 
-// Replace with your network credentials
-// const char* ssid = PROJECT_WIFI_SSID;
-// const char* password = PROJECT_WIFI_PASSWORD;
+#define AIO_SERVER "io.adafruit.com"
+#define AIO_SERVERPORT 1883
+#define AIO_USERNAME "your_username"
+#define AIO_KEY "your_key"
 
 const char* ssid = PROJECT_WIFI_SSID;
-const char* password = PROJECT_WIFI_PASSWORD;
+const char* password = x`;
 
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
 
 // Set LED GPIO
 const int ledPin = 13;
@@ -52,6 +55,8 @@ void wifiTask(void *pvParameters) {
   Serial.println(WiFi.localIP());
   vTaskDelete(NULL);  // Delete the task when done
 }
+
+void 
 
 // Task to handle server
 void serverTask(void *pvParameters) {
