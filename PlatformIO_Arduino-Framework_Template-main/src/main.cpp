@@ -13,7 +13,7 @@
 #define AIO_KEY "your_key"
 
 const char* ssid = PROJECT_WIFI_SSID;
-const char* password = x`;
+const char* password = PROJECT_WIFI_PASSWORD;
 
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
