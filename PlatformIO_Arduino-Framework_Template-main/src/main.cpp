@@ -5,8 +5,7 @@ void setup(){
   // pinMode(ledPin, OUTPUT);
 
   xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
-  xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
-  xTaskCreate(publishCoordinate, "PublishCoordinate", 4096, NULL, 1, NULL);
+  // xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
   // xTaskCreate(serverTask, "ServerTask", 8192, NULL, 1, NULL);
 }
 

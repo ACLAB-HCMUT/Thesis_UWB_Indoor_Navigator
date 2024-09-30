@@ -5,8 +5,8 @@
 
 #define AIO_SERVER "io.adafruit.com"
 #define AIO_SERVERPORT 1883
-#define AIO_USERNAME "aclab241"
-#define AIO_KEY "aio_vgIF36pDKlW42rjNwdkYCgzuuYIw"
+#define AIO_USERNAME "your_username"
+#define AIO_KEY "your_key"
 
 void mqttTask(void *pvParameters);
 void publishCoordinate(void *pvParameters);
