@@ -21,7 +21,13 @@ void mqttTask(void *pvParameters){
     vTaskDelete(NULL);
 }
 
-void publishCoordinate(char* coordinateValue){
+float randomFloat (float minValue, float maxValue){
+    float random = ((float) rand()) / (float) RAND_MAX;
+    return minValue + random * (maxValue - minValue);
+}
+
+void publishCoordinate(){
+    float coordinateValue = randomFloat(0, 90);
     if (mqtt.connected()){
         coordinate.publish(coordinateValue);
     }
