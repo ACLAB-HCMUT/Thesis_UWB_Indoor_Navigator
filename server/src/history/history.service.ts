@@ -27,4 +27,8 @@ export class HistoryService {
     remove(id: string) {
         return this.historyModel.deleteOne({_id: id});
     }
+
+    bulkRemove(historyIds: string[]){
+        return this.historyModel.deleteMany({ _id: { $in: historyIds } });
+    }
 }

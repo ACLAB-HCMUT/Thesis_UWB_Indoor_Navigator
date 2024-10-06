@@ -3,11 +3,11 @@ import { HydratedDocument } from 'mongoose';
 
 export type HistoryDocument = HydratedDocument<History>;
 
-@Schema()
+@Schema({ timestamps: true })
 export class History {
-    @Prop()
+    @Prop({ required: true })
     x: number;
-    @Prop()
+    @Prop({ required: true })
     y: number;
 }
 
