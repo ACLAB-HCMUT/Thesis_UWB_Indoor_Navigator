@@ -3,5 +3,5 @@
 
 #define AIO_SERVER "io.adafruit.com"
 #define AIO_SERVERPORT 1883
-#define AIO_USERNAME "aclab241"
-#define AIO_KEY "aio_ENtM49fWY0oZ6rC8BKgrROQIxgOg"
+#define AIO_USERNAME "your_name"
+#define AIO_KEY "your_key"
