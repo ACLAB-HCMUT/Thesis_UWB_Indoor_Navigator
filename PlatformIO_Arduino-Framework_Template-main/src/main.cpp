@@ -150,9 +150,6 @@ void setup(){
   // xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
   // xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
   Serial2.begin(115200, SERIAL_8N1, 32, 26);
-  if (Serial2.available()) {
-    Serial.println("Serial2 is available");
-  }
   UWB_Timer();
   delay(1000);
 }
@@ -161,11 +158,6 @@ void loop(){
   // Nothing to do here, FreeRTOS tasks handle the work
   UWB_Keyscan();
   UWB_readString();
-  if (Serial.available()) {
-    Serial.println("Serial is available");
-  } else {
-    Serial.println("Serial is not available");
-  }
   Serial.println("data is: " + DATA);
   delay(2000);
 }
