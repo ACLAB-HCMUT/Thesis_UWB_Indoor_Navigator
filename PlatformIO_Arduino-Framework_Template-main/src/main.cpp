@@ -1,13 +1,21 @@
 #include "global.h"
 #include <M5Stack.h>
+#include <Adafruit_NeoPixel.h>
+
+// Define the NeoPixel data pin and the number of pixels
+#define PIN_NEOPIXEL 27  // GPIO 27 on M5Stack Atom Lite
+#define NUMPIXELS 1      // Number of NeoPixels (only 1 on M5Stack Atom Lite)
+
+// Create a NeoPixel object
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 
 String DATA  = " ";  // Used to store distance data
-int UWB_MODE = 0;    // Used to set UWB mode
+int UWB_MODE = 1;    // Used to set UWB mode
 
 int UWB_T_UI_NUMBER_2 = 0;  // flag bit
 int UWB_T_UI_NUMBER_1 = 0;
-int UWB_T_NUMBER      = 0;
-int UWB_B_NUMBER      = 0;
+int UWB_T_NUMBER      = 1;
+int UWB_B_NUMBER      = 1;
 
 hw_timer_t *timer   = NULL;
 int timer_flag      = 0;
@@ -17,25 +25,25 @@ static void IRAM_ATTR Timer0_CallBack(void);
 
 // Data display via Serial
 void UWB_display() {
-    if (Serial2.available()) {
-        Serial.println("OK!! ");
-    }
+    // if (Serial2.available()) {
+        // Serial.println(UWB_MODE);
+    // }
     switch (UWB_MODE) {
         case 0:  // Tag mode
             if (UWB_T_NUMBER > 0 && UWB_T_NUMBER < 5) {
                 int c = UWB_T_NUMBER;
-                int b = 4 - UWB_T_NUMBER;
-                while (c > 0) {
-                    c--;
+                // int b = 4 - UWB_T_NUMBER;
+                // while (c > 0) {
+                //     c--;
                     Serial.print("Tag serial number: ");
                     Serial.println(DATA.substring(2 + c * 11, 3 + c * 11));  // Tag serial number
                     Serial.print("Distance: ");
                     Serial.println(DATA.substring(4 + c * 11, 8 + c * 11));  // Distance
-                }
-                while (b > 0) {
-                    b--;
-                    Serial.println("Clearing remaining data slots...");
-                }
+                // }
+                // while (b > 0) {
+                //     b--;
+                //     Serial.println("Clearing remaining data slots...");
+                // }
             }
             break;
         case 1:  // Base station mode
@@ -239,21 +247,27 @@ static void IRAM_ATTR Timer0_CallBack(void)  // Timer function
 void setup() {
     M5.begin();
     M5.Power.begin();
-    Serial.begin(115200);
-    Serial2.begin(115200, SERIAL_8N1, 32, 26);  // Use RX 26, TX 32 for Serial2
-    delay(100);
-    UWB_Timer();
-    UWB_ui_display();
+    pixels.begin();
+  
+    // // Turn off the NeoPixel
+    // pixels.clear();
+    // pixels.show(); 
+    // Serial.begin(115200);
+    // Serial2.begin(115200, SERIAL_8N1, 32, 26);  // Use RX 26, TX 32 for Serial2
+    // delay(100);
+    // UWB_setupmode();
+    // UWB_Timer();
+    // // UWB_ui_display();
 
-    xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
-    xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
-    xTaskCreate(publishCoordinate, "publishCoordinate", 4096, NULL, 1, NULL);
+    // xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
+    // xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
+    // xTaskCreate(publishCoordinate, "publishCoordinate", 4096, NULL, 1, NULL);
 }
 
 void loop() {
-    M5.update();
-    // UWB_Keyscan();
-    // UWB_readString();
-    UWB_display();
-    Serial2.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
+//     M5.update();
+//     // UWB_Keyscan();
+//     UWB_readString();
+//     UWB_display();
+//     Serial2.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
 }
