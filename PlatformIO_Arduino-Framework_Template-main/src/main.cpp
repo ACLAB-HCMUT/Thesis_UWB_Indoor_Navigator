@@ -25,9 +25,9 @@ static void IRAM_ATTR Timer0_CallBack(void);
 
 // Data display via Serial
 void UWB_display() {
-    // if (Serial2.available()) {
-        // Serial.println(UWB_MODE);
-    // }
+    if (Serial2.available()) {
+        Serial.println(UWB_MODE);
+    }
     switch (UWB_MODE) {
         case 0:  // Tag mode
             if (UWB_T_NUMBER > 0 && UWB_T_NUMBER < 5) {
@@ -252,22 +252,22 @@ void setup() {
     // // Turn off the NeoPixel
     // pixels.clear();
     // pixels.show(); 
-    // Serial.begin(115200);
-    // Serial2.begin(115200, SERIAL_8N1, 32, 26);  // Use RX 26, TX 32 for Serial2
-    // delay(100);
-    // UWB_setupmode();
-    // UWB_Timer();
-    // // UWB_ui_display();
+    Serial.begin(115200);
+    Serial2.begin(115200, SERIAL_8N1, 32, 26);  // Use RX 26, TX 32 for Serial2
+    delay(100);
+    UWB_setupmode();
+    UWB_Timer();
+    // UWB_ui_display();
 
-    // xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
+    xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
     // xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
     // xTaskCreate(publishCoordinate, "publishCoordinate", 4096, NULL, 1, NULL);
 }
 
 void loop() {
-//     M5.update();
-//     // UWB_Keyscan();
-//     UWB_readString();
-//     UWB_display();
-//     Serial2.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
+    M5.update();
+    // UWB_Keyscan();
+    UWB_readString();
+    UWB_display();
+    Serial2.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
 }
