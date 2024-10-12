@@ -30,6 +30,10 @@ flutter_lints
 3.1
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-4.0.0/
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_lints-4.0.0/lib/
+go_router
+3.3
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/go_router-14.3.0/
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/go_router-14.3.0/lib/
 leak_tracker
 3.2
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-10.0.5/
@@ -46,6 +50,10 @@ lints
 3.1
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/lints-4.0.0/
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/lints-4.0.0/lib/
+logging
+2.19
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/logging-1.2.0/
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/logging-1.2.0/lib/
 matcher
 3.0
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/matcher-0.12.16+1/
@@ -62,6 +70,10 @@ path
 3.0
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.0/
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.0/lib/
+sliding_clipped_nav_bar
+2.16
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/sliding_clipped_nav_bar-3.1.1/
+file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/sliding_clipped_nav_bar-3.1.1/lib/
 source_span
 2.18
 file:///C:/Users/Minh%20Hieu/AppData/Local/Pub/Cache/hosted/pub.dev/source_span-1.10.0/
@@ -110,4 +122,8 @@ flutter_test
 3.3
 file:///C:/flutter/packages/flutter_test/
 file:///C:/flutter/packages/flutter_test/lib/
+flutter_web_plugins
+3.2
+file:///C:/flutter/packages/flutter_web_plugins/
+file:///C:/flutter/packages/flutter_web_plugins/lib/
 2
