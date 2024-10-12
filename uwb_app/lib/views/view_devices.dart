@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 class Device {
   final String deviceName;
@@ -16,22 +17,22 @@ class Device {
 
 List<Device> devices = [
   Device(
-    deviceName: 'Node 1',
+    deviceName: 'Tag 1',
     deviceAcStatus: 'Active',
     deviceLoStatus: 'In room',
-    deviceImagePath: 'assets/images/node1.png',
+    deviceImagePath: 'uwb.png',
   ),
   Device(
-    deviceName: 'Node 2',
+    deviceName: 'Tag 2',
     deviceAcStatus: 'Not Active',
     deviceLoStatus: 'In room',
-    deviceImagePath: 'assets/images/node2.png',
+    deviceImagePath: 'uwb.png',
   ),
   Device(
-    deviceName: 'Node 3',
+    deviceName: 'Tag 3',
     deviceAcStatus: 'Active',
     deviceLoStatus: 'Out room',
-    deviceImagePath: 'assets/images/node3.png',
+    deviceImagePath: 'uwb.png',
   ),
 ];
 
@@ -48,36 +49,77 @@ class _ViewDevicesState extends State<ViewDevices> {
     return MaterialApp(
       title: 'Devices',
       home: Scaffold(
-        body: GridView.builder(
-          itemCount: devices.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10.0,
-            mainAxisSpacing: 10.0,
-            childAspectRatio: 3/4,
-          ),
-          itemBuilder: (context, index) {
-            final device = devices[index];
-            return Card (
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Column(children: [
-                InkWell(
-                  onTap: () {},
-                  child: Container(
-                    margin: const EdgeInsets.all(10.0),
-                    child: const Image(
-                      image: AssetImage('uwb.png'),
-                      height: 120.0,
-                      fit: BoxFit.contain,
-                    ),
+        body: Padding(
+          padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
+          child: GridView.builder(
+            itemCount: devices.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10.0,
+              mainAxisSpacing: 10.0,
+              childAspectRatio: 7/6,
+            ),
+            itemBuilder: (context, index) {
+              final device = devices[index];
+              return Card (
+                  elevation: 4.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
-                ),
-              ],)
-            );
-          },
+                  child: InkWell(
+                      onTap: () {},
+                      child: Column(children: [
+                        // Device Status
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Row (children:[
+                            Container(
+                              margin: const EdgeInsets.only(top: 10.0, left: 15.0),
+                              width: 10.0,
+                              height: 10.0,
+                              decoration: BoxDecoration(
+                                color: device.deviceAcStatus == 'Active' ? Colors.green : Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5.0),
+                            Container(
+                                margin: const EdgeInsets.only(top: 10.0),
+                                child: Text (
+                                  device.deviceAcStatus == 'Active' ? 'Active' : 'Not Active',
+                                  style: TextStyle(
+                                    fontSize: 12.0,
+                                    color: device.deviceAcStatus == 'Active' ? Colors.green : Colors.red,
+                                  ),
+                                )
+                            )
+                          ],),
+                        ),
+                        // Device Image
+                        Image(
+                          image: AssetImage(device.deviceImagePath),
+                          height: 80,
+                        ),
+                        // Device Name
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 10.0, left: 15.0),
+                            child: Text(
+                              device.deviceName,
+                              style: const TextStyle(
+                                fontSize: 18.0,
+                                // fontWeight: FontWeight.,
+                                fontFamily: 'BabasNee',
+                              ),
+                            ),
+                          )
+                        )
+                      ],)
+                  )
+              );
+            },
+          )
         )
       ),
     );
