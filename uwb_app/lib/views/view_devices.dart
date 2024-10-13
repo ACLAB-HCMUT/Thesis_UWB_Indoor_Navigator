@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:go_router/go_router.dart';
 
 class Device {
+  final String deviceId;
   final String deviceName;
   final String deviceAcStatus;
   final String deviceLoStatus;
   final String deviceImagePath;
 
   Device ({
+    required this.deviceId,
     required this.deviceName,
     required this.deviceAcStatus,
     required this.deviceLoStatus,
@@ -17,18 +20,21 @@ class Device {
 
 List<Device> devices = [
   Device(
+    deviceId: '01',
     deviceName: 'Tag 1',
     deviceAcStatus: 'Active',
     deviceLoStatus: 'In room',
     deviceImagePath: 'uwb.png',
   ),
   Device(
+    deviceId: '02',
     deviceName: 'Tag 2',
     deviceAcStatus: 'Not Active',
     deviceLoStatus: 'In room',
     deviceImagePath: 'uwb.png',
   ),
   Device(
+    deviceId: '03',
     deviceName: 'Tag 3',
     deviceAcStatus: 'Active',
     deviceLoStatus: 'Out room',
@@ -67,7 +73,9 @@ class _ViewDevicesState extends State<ViewDevices> {
                     borderRadius: BorderRadius.circular(10.0),
                   ),
                   child: InkWell(
-                      onTap: () {},
+                      onTap: () {
+                        context.goNamed('DeviceInfo', extra: device.deviceId);
+                      },
                       child: Column(children: [
                         // Device Status
                         Align(
@@ -109,12 +117,25 @@ class _ViewDevicesState extends State<ViewDevices> {
                               device.deviceName,
                               style: const TextStyle(
                                 fontSize: 18.0,
-                                // fontWeight: FontWeight.,
                                 fontFamily: 'BabasNee',
                               ),
                             ),
                           )
-                        )
+                        ),
+                        // Device Location
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 15.0),
+                            child: Text(
+                              device.deviceLoStatus,
+                              style: const TextStyle(
+                                fontSize: 12.0,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          )
+                        ),
                       ],)
                   )
               );

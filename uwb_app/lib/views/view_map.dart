@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ViewMap extends StatefulWidget {
-  const ViewMap({super.key});
+  final String? deviceId;
+  const ViewMap({super.key, this.deviceId});
 
   @override
   State<ViewMap> createState() => _ViewMap();
@@ -10,9 +11,9 @@ class ViewMap extends StatefulWidget {
 class _ViewMap extends State<ViewMap> {
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Text('Map'),
+        child: Text('Map of room ${widget.deviceId}')
       ),
     );
   }

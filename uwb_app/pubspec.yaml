@@ -79,9 +79,21 @@ flutter:
     - family: BabasNee
       fonts:
        - asset: fonts/BabasNee-Regular.ttf
-    - family: Updock
+    - family: Kant
       fonts:
-        - asset: fonts/Updock-Regular.ttf
-
+       - asset: fonts/Kant-Regular.ttf
+       - asset: fonts/Kant-Black.ttf
+    - family: FacadeFlux
+      fonts:
+        - asset: fonts/FacadeFlux.ttf
+    - family: lemon_milk
+      fonts:
+        - asset: fonts/lemon_milk-Regular.otf
+    - family: Coco-Pro
+      fonts:
+        - asset: fonts/Coco-Pro-Regular-trial.ttf
+    - family: Sandra
+      fonts:
+        - asset: fonts/Sandra.ttf
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
