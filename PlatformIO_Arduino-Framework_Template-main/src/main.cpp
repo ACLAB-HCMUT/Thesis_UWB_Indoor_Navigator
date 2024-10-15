@@ -10,12 +10,12 @@
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 
 String DATA  = " ";  // Used to store distance data
-int UWB_MODE = 1;    // Used to set UWB mode
+int UWB_MODE = 0;    // Used to set UWB mode
 
 int UWB_T_UI_NUMBER_2 = 0;  // flag bit
 int UWB_T_UI_NUMBER_1 = 0;
 int UWB_T_NUMBER      = 1;
-int UWB_B_NUMBER      = 1;
+int UWB_B_NUMBER      = 0;
 
 hw_timer_t *timer   = NULL;
 int timer_flag      = 0;
@@ -25,9 +25,9 @@ static void IRAM_ATTR Timer0_CallBack(void);
 
 // Data display via Serial
 void UWB_display() {
-    if (Serial2.available()) {
-        Serial.println(UWB_MODE);
-    }
+    // if (Serial2.available()) {
+    //     Serial.println(UWB_MODE);
+    // }
     switch (UWB_MODE) {
         case 0:  // Tag mode
             if (UWB_T_NUMBER > 0 && UWB_T_NUMBER < 5) {
@@ -36,9 +36,12 @@ void UWB_display() {
                 // while (c > 0) {
                 //     c--;
                     Serial.print("Tag serial number: ");
-                    Serial.println(DATA.substring(2 + c * 11, 3 + c * 11));  // Tag serial number
+                    Serial2.write("AT+version?\r\n");
+                    DATA = Serial2.readString();
+                    Serial.println(DATA);  // Tag serial number
                     Serial.print("Distance: ");
-                    Serial.println(DATA.substring(4 + c * 11, 8 + c * 11));  // Distance
+                    DATA = Serial2.readString();
+                    Serial.println(DATA);  // Distance
                 // }
                 // while (b > 0) {
                 //     b--;
@@ -166,13 +169,16 @@ void UWB_setupmode() {
             for (int b = 0; b < 2; b++) {  // Repeat twice to stabilize the connection
                 delay(50);
                 Serial2.write("AT+anchor_tag=0\r\n");  // Set up the Tag
+                Serial.println("Set up Tag");
                 delay(50);
                 Serial2.write("AT+interval=5\r\n");  // Set the calculation precision
                 delay(50);
                 Serial2.write("AT+switchdis=1\r\n");  // Start measuring distance
+                Serial.println("Start measuring");
                 delay(50);
                 if (b == 0) {
                     Serial2.write("AT+RST\r\n");  // RESET
+                    Serial.println("Reset");
                 }
             }
             UWB_clear();
@@ -267,7 +273,7 @@ void setup() {
 void loop() {
     M5.update();
     // UWB_Keyscan();
-    UWB_readString();
+    // UWB_readString();
     UWB_display();
-    Serial2.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
+    // Serial.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
 }
