@@ -19,6 +19,11 @@ export class DeviceController {
     return this.deviceService.findOne(id);
   }
 
+  @Get()
+  findAll() {
+    return this.deviceService.findAll();
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDeviceDto: UpdateDeviceDto) {
     return this.deviceService.update(id, updateDeviceDto);

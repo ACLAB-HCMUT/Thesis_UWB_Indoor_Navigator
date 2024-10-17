@@ -38,7 +38,7 @@ class AppNavigation {
                     name: 'DeviceInfo',
                     pageBuilder: (context, state) => CustomTransitionPage(
                       key: state.pageKey,
-                      child: ViewDeviceInfo(deviceId: state.extra as String),
+                      child: ViewDeviceInfo(id: state.extra as String),
                       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
                           FadeTransition(opacity: animation, child: child),
                     ),
@@ -53,7 +53,7 @@ class AppNavigation {
               GoRoute(
                 path: '/map-of-room',
                 name: 'MapOfRoom',
-                builder: (context, state) => ViewMap(deviceId: state.uri.queryParameters['deviceId']),
+                builder: (context, state) => ViewMap(id: state.uri.queryParameters['id']),
               )
             ]
           )

@@ -24,6 +24,10 @@ export class DeviceService {
         });
     }
 
+    findAll() {
+        return this.deviceModel.find();
+    }
+
     async update(id: string, updateDeviceDto: UpdateDeviceDto) {
         const history = await this.historyService.create(updateDeviceDto.history);
         return this.deviceModel.findByIdAndUpdate(
