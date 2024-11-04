@@ -10,11 +10,11 @@
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 
 String DATA  = " ";  // Used to store distance data
-int UWB_MODE = 0;    // Used to set UWB mode
+int UWB_MODE = 1;    // Used to set UWB mode
 
 int UWB_T_UI_NUMBER_2 = 0;  // flag bit
 int UWB_T_UI_NUMBER_1 = 0;
-int UWB_T_NUMBER      = 1;
+int UWB_T_NUMBER      = 0;
 int UWB_B_NUMBER      = 0;
 
 hw_timer_t *timer   = NULL;
@@ -32,13 +32,13 @@ void UWB_display() {
         case 0:  // Tag mode
             if (UWB_T_NUMBER > 0 && UWB_T_NUMBER < 5) {
                 int c = UWB_T_NUMBER;
-                // int b = 4 - UWB_T_NUMBER;
+                int b = 4 - UWB_T_NUMBER;
                 // while (c > 0) {
                 //     c--;
-                    Serial.print("Tag serial number: ");
-                    Serial2.write("AT+version?\r\n");
-                    DATA = Serial2.readString();
-                    Serial.println(DATA);  // Tag serial number
+                    // Serial.print("Tag serial number: ");
+                    // Serial2.write("AT+version?\r\n");
+                    // DATA = Serial2.readString();
+                    // Serial.println(DATA);  // Tag serial number
                     Serial.print("Distance: ");
                     DATA = Serial2.readString();
                     Serial.println(DATA);  // Distance
@@ -116,16 +116,18 @@ void UWB_readString() {
             if (Serial2.available()) {
                 delay(20);
                 UWB_T_NUMBER = (Serial2.available() / 11);  // Count the number of Base stations
+                Serial.println(UWB_T_NUMBER);
                 delay(20);
-                if (UWB_T_NUMBER != UWB_T_UI_NUMBER_1 || UWB_T_UI_NUMBER_2 == 0) {  
-                    UWB_T_UI_NUMBER_1 = UWB_T_NUMBER;
-                    UWB_T_UI_NUMBER_2 = 1;
+                if (UWB_T_NUMBER != 0) {  
 
                     // Display tag mode info on Serial
                     Serial.print("Tag Mode: Number of base stations: ");
                     Serial.println(UWB_T_NUMBER);
                 }
+                // DATA = Serial2.readString();
+                Serial.print("Distance: ");
                 DATA = Serial2.readString();
+                Serial.println(DATA);  // Distance
                 delay(2);
                 timer_flag = 0;
                 timer_data = 1;
@@ -271,9 +273,9 @@ void setup() {
 }
 
 void loop() {
-    M5.update();
+    // M5.update();
     // UWB_Keyscan();
-    // UWB_readString();
-    UWB_display();
+    UWB_readString();
+    // UWB_display();
     // Serial.println(UWB_MODE);  // Print UWB mode to Serial2 for debugging
 }
