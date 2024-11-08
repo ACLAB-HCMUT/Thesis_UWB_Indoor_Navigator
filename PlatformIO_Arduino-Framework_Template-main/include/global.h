@@ -10,13 +10,17 @@
 #include "freertos/task.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+#include <M5Stack.h>
+#include "WiFiUdp.h"
+#include <NTPClient.h>
 
 //declare internal libraries
 #include "wifi_support.h"
 #include "server_support.h"
 #include "mqtt_support.h"
+#include "uwb_support.h"
 
 //declare global variables
-
+extern int mqttConnectedSignal;
 
 #endif
