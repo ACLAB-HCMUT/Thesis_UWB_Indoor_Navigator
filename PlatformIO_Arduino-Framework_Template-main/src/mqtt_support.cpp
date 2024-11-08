@@ -19,6 +19,7 @@ void mqttTask(void *pvParameters){
     }
 
     Serial.println("MQTT Connected");
+    mqttConnectedSignal = 1;
     vTaskDelete(NULL);
 }
 
@@ -27,17 +28,14 @@ float randomFloat (float minValue, float maxValue){
     return minValue + random * (maxValue - minValue);
 }
 
-void publishCoordinate(void *pvParameters){
-    vTaskDelay(8000 / portTICK_PERIOD_MS);
-    int count = 0;
-    while (count < 99){
-        float coordinateValue = randomFloat(0, 90);
-        if (mqtt.connected()){
-            coordinate.publish(coordinateValue);
-            Serial.print("Publish coordinate value: ");
-            Serial.print(coordinateValue);
-            Serial.println();
-        }
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+void publishCoordinate(String coordinateValue){
+    if (mqtt.connected()){
+        coordinate.publish(coordinateValue.c_str());
+        Serial.print("Publish coordinate value: ");
+        Serial.print(coordinateValue);
+        Serial.println();
+    } else {
+        Serial.println("MQTT Disconnected");
+        mqttConnectedSignal = 0;
     }
 }

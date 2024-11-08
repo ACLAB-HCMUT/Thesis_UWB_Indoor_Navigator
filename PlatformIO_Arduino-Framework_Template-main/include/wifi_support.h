@@ -5,6 +5,7 @@
 
 extern const char* ssid;
 extern const char* password;
+extern NTPClient timeClient;
 
 void wifiTask(void *pvParameters);
 
