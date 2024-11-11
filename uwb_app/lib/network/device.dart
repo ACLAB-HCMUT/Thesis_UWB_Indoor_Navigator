@@ -72,7 +72,7 @@ class Device {
 }
 
 class DeviceService {
-  final String baseUrl = 'http://localhost:3000/device';
+  final String baseUrl = 'http://192.168.0.108:3000/device';
 
   Future<Device> fetchDeviceById(String deviceId) async {
     final response = await http.get(Uri.parse('$baseUrl/$deviceId'));

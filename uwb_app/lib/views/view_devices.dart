@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
+import 'package:uwb_app/network/mqtt.dart';
 
 
 class ViewDevices extends StatefulWidget {
@@ -13,11 +15,12 @@ class ViewDevices extends StatefulWidget {
 class _ViewDevicesState extends State<ViewDevices> {
   late Future<List<Device>> devices;
   final DeviceService deviceService = DeviceService();
-
+  final MqttService mqttService = MqttService();
   @override
   void initState() {
     super.initState();
     devices = deviceService.fetchAllDevices();
+    mqttService.connect();
   }
 
   @override
@@ -90,7 +93,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                           ),
                           // Device Image
                           Image(
-                            image: AssetImage(device.img),
+                            image: AssetImage('assets/${device.img}'),
                             height: 80,
                           ),
                           // Device Name

@@ -11,11 +11,13 @@
 			"type": "dart",
 			"args": [
 				"d",
-				"chrome",
+				// "chrome",
 				"--web-port",
 				"5000",
 				"--web-browser-flag",
-				"--disable-web-security"
+				"--disable-web-security",
+				"--web-hostname",
+				"0.0.0.0"
 			]
 		},
 		{
