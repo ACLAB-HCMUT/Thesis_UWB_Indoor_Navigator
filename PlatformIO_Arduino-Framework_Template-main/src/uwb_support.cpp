@@ -8,7 +8,7 @@ int UWB_B_NUMBER = 0; // Base station number
 float distancesList[3] = {0.0, 0.0, 0.0};
 int distanceNumber = 0; // number of available distances
 float tagPos[2] = {0.0, 0.0};
-float basePos[3][2] = {{0,0}, {0,2.25}, {2.3,0}};
+float basePos[3][2] = {{0,0}, {0,2.1}, {1.6,0}};
 
 String preparePublishMessage (float x, float y) {
     String message = "";
@@ -32,7 +32,7 @@ void extractDistance (String data) {
         int endIndex = data.indexOf("m", startIndex);
         String distance = data.substring(startIndex + tagInfo.length(), endIndex);
         if (startIndex == -1 || endIndex == -1) continue;
-        distancesList[i] = distance.toFloat();
+        distancesList[i] = 0.867*(distance.toFloat()) - 0.146;
         distanceNumber++;
     }
 }
