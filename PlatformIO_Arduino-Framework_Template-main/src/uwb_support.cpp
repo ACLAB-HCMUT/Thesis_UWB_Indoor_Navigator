@@ -8,7 +8,7 @@ int UWB_B_NUMBER = 0; // Base station number
 float distancesList[3] = {0.0, 0.0, 0.0};
 int distanceNumber = 0; // number of available distances
 float tagPos[2] = {0.0, 0.0};
-float basePos[3][2] = {{0,0}, {0,0.9}, {1.6,0}};
+float basePos[3][2] = {{0,0}, {0,2.25}, {2.3,0}};
 
 String preparePublishMessage (float x, float y) {
     String message = "";
@@ -32,21 +32,21 @@ void extractDistance (String data) {
         int endIndex = data.indexOf("m", startIndex);
         String distance = data.substring(startIndex + tagInfo.length(), endIndex);
         if (startIndex == -1 || endIndex == -1) continue;
-        distancesList[i] = 4.61*distance.toFloat() + 0.02168;
+        distancesList[i] = distance.toFloat();
         distanceNumber++;
     }
 }
 
 void UWB_readString() {
-    unsigned long currentTime = millis();
-    if ((currentTime / 1000) % 4 == UWB_T_NUMBER)
-    {
-        Serial2.write("AT+anchor_tag=0\r\n");
-        delay(100);
-        Serial2.write("AT+interval=5\r\n");
-        delay(100);
-        Serial2.write("AT+switchdis=1\r\n");
-        delay(100);
+    // unsigned long currentTime = millis();
+    // if ((currentTime / 1000) % 4 == UWB_T_NUMBER)
+    // {
+        // Serial2.write("AT+anchor_tag=0\r\n");
+        // delay(100);
+        // Serial2.write("AT+interval=5\r\n");
+        // delay(100);
+        // Serial2.write("AT+switchdis=1\r\n");
+        // delay(100);
         
         Serial.print("\nDistance: ");
         DATA = Serial2.readString();
@@ -60,17 +60,29 @@ void UWB_readString() {
             tmpIndex++;
         }
 
-        Serial2.write("AT+RST\r\n");
-        delay(100);
-    }
+        // Serial2.write("AT+RST\r\n");
+        // delay(100);
+    // }
 }
 
 void UWB_setupmode() {
     switch (UWB_MODE) {
         case 0:
-            delay(50);
-            Serial2.write("AT+RST\r\n");
-            DATA = "";
+            for (int b = 0; b < 2; b++) {  // Repeat twice to stabilize the connection
+                delay(50);
+                Serial2.write("AT+anchor_tag=0\r\n");  // Set up the Tag
+                Serial.println("Set up Tag");
+                delay(50);
+                Serial2.write("AT+interval=1\r\n");  // Set the calculation precision
+                delay(50);
+                Serial2.write("AT+switchdis=1\r\n");  // Start measuring distance
+                Serial.println("Start measuring");
+                delay(50);
+                if (b == 0) {
+                    Serial2.write("AT+RST\r\n");  // RESET
+                    Serial.println("Reset");
+                }
+            }
             Serial.println("UWB Tag mode setup complete.");
             break;
         case 1:
