@@ -20,7 +20,7 @@ class _ViewDevicesState extends State<ViewDevices> {
   void initState() {
     super.initState();
     devices = deviceService.fetchAllDevices();
-    mqttService.connect();
+    // mqttService.connect();
   }
 
   @override
