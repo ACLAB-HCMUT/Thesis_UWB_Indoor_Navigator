@@ -20,7 +20,7 @@ class _ViewDevicesState extends State<ViewDevices> {
   void initState() {
     super.initState();
     devices = deviceService.fetchAllDevices();
-    // mqttService.connect();
+    mqttService.connect();
   }
 
   @override
@@ -49,7 +49,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 10.0,
                   mainAxisSpacing: 10.0,
-                  childAspectRatio: 7 / 6,
+                  childAspectRatio: 7 / 7,
                 ),
                 itemBuilder: (context, index) {
                   final device = devicesList[index];

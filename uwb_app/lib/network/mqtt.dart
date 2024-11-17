@@ -4,106 +4,70 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
 class MqttService {
-  late MqttServerClient client;
+  final String broker = 'io.adafruit.com';
+  final int port = 1883;
   final String username = '';
   final String aioKey = '';
   final Logger logger = Logger('MqttService');
-
-  MqttService();
+  final List<String> topics = ['coordinate'];
 
   Future<void> connect() async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    client =
-        MqttServerClient.withPort('io.adafruit.com', 'flutter_client_$now', 1883);
+    final client = MqttServerClient(broker, '');
+    client.port = port;
     client.secure = false;
-    client.setProtocolV311();
-    // client.connectTimeoutPeriod = 10000;
-    client.keepAlivePeriod = 200;
-    client.onDisconnected = onDisconnected;
     client.logging(on: true);
-    client.autoReconnect = true;
-    client.onConnected = onConnected;
-    client.onSubscribed = onSubscribed;
-    client.onSubscribeFail = onSubscribeFail;
-    try {
-      logger.info('Starting connection attempt...');
-      final connMessage = MqttConnectMessage()
-          .withClientIdentifier('flutter_client_$now')
-          .startClean()
-          .withWillQos(MqttQos.atLeastOnce)
-          .authenticateAs(username, aioKey);
-      client.connectionMessage = connMessage;
-      await client.connect(username, aioKey);
+    client.keepAlivePeriod = 30;
 
-      if (client.connectionStatus?.state == MqttConnectionState.connected) {
-        logger.info('Connected to Adafruit IO!');
-        subscribe('$username/feeds/coordinate/json');
-      } else {
-        logger.severe(
-            'Connection failed - status is ${client.connectionStatus?.state}');
-        logger.severe('Return code: ${client.connectionStatus?.returnCode}');
-      }
+    final connMessage = MqttConnectMessage()
+        .withClientIdentifier(
+            'flutter_mqtt_client') // Unique identifier for the client
+        .withWillTopic('willtopic') // Optional last-will topic
+        .withWillMessage('Connection closed')
+        .startClean() // Clean session
+        .authenticateAs(username, aioKey) // Authentication
+        .withWillQos(MqttQos.atMostOnce);
+    client.connectionMessage = connMessage;
+
+    try {
+      print('Connecting to Adafruit IO...');
+      await client.connect();
     } on NoConnectionException catch (e) {
-      logger.severe('Failed to connect: $e');
-      logger.severe('Connection status: ${client.connectionStatus}');
-      logger.severe('Client state: ${client.connectionStatus?.state}');
+      print('MQTT client exception - $e');
       client.disconnect();
-    } catch (e) {
-      logger.severe('Error occurred: $e');
-      logger.severe('Connection status: ${client.connectionStatus}');
-      logger.severe('Client state: ${client.connectionStatus?.state}');
+      return;
+    }
+
+    if (client.connectionStatus!.state == MqttConnectionState.connected) {
+      print('MQTT client connected');
+    } else {
+      print('Connection failed - ${client.connectionStatus!.state}');
       client.disconnect();
+      return;
+    }
+
+    subscribeToFeeds(client);
+    listenFromFeeds(client);
+  }
+
+  void subscribeToFeeds(MqttClient client) {
+    print('Subscribing to feed...');
+    for (var topic in topics) {
+      final String fullTopic = '$username/feeds/$topic';
+      client.subscribe(fullTopic, MqttQos.atLeastOnce);
+      print('Subscribed to feed: $topic');
     }
   }
 
-  void subscribe(String topic) {
-    logger.info('Subscribing to $topic...');
-    client.subscribe(topic, MqttQos.atLeastOnce);
-    client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
-      final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-      final String payload =
-          MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+  void listenFromFeeds(MqttClient client) {
+    print('Listening for messages from subscribed feeds...');
+    client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
+      for (var message in messages) {
+        final topic = message.topic;
+        final MqttPublishMessage payloadMessage = message.payload as MqttPublishMessage;
+        final String payload = MqttPublishPayload.bytesToStringAsString(payloadMessage.payload.message);
 
-      logger.info('Received message from topic: ${c[0].topic}');
-      logger.info('Raw payload: $payload');
-
-      try {
-        final Map<String, dynamic> data = jsonDecode(payload);
-
-        final String createdAt = data['created_at'] ?? 'No created_at';
-        final dynamic value = data['value'];
-        final String location = data['location'] ?? 'No location';
-
-        logger.info('----------------------------------------');
-        logger.info('Created at: $createdAt');
-        logger.info('Value: $value');
-        logger.info('Location: $location');
-        logger.info('----------------------------------------');
-      } catch (e) {
-        logger.severe('Error parsing message: $e');
-        logger.severe('Raw message that failed to parse: $payload');
+        print('Message received: Topic = $topic, Payload = $payload');
       }
     });
-  }
-
-  void disconnect() {
-    logger.info('Disconnecting from Adafruit IO');
-    client.disconnect();
-  }
-
-  void onConnected() {
-    logger.info('Connected to Adafruit IO');
-  }
-
-  void onDisconnected() {
-    logger.info('Disconnected from Adafruit IO');
-  }
-
-  void onSubscribed(String topic) {
-    logger.info('Successfully subscribed to topic: $topic');
-  }
-
-  void onSubscribeFail(String topic) {
-    logger.info('Failed to subscribe to topic: $topic');
   }
 }
