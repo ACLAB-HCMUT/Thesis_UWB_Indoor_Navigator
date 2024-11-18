@@ -1,4 +1,5 @@
-import 'dart:convert';
+import 'dart:async';
+
 import 'package:logging/logging.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -10,9 +11,13 @@ class MqttService {
   final String aioKey = '';
   final Logger logger = Logger('MqttService');
   final List<String> topics = ['coordinate'];
+  late MqttServerClient client;
+  final StreamController<Map<String, String>> _messageController = StreamController.broadcast();
+  MqttService() {
+    client = MqttServerClient(broker, '');
+  }
 
   Future<void> connect() async {
-    final client = MqttServerClient(broker, '');
     client.port = port;
     client.secure = false;
     client.logging(on: true);
@@ -45,11 +50,11 @@ class MqttService {
       return;
     }
 
-    subscribeToFeeds(client);
-    listenFromFeeds(client);
+    subscribeToFeeds();
+    print('Finished connecting to Adafruit IO');
   }
 
-  void subscribeToFeeds(MqttClient client) {
+  void subscribeToFeeds() {
     print('Subscribing to feed...');
     for (var topic in topics) {
       final String fullTopic = '$username/feeds/$topic';
@@ -58,16 +63,20 @@ class MqttService {
     }
   }
 
-  void listenFromFeeds(MqttClient client) {
+  void listenFromFeeds() {
     print('Listening for messages from subscribed feeds...');
     client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
       for (var message in messages) {
         final topic = message.topic;
-        final MqttPublishMessage payloadMessage = message.payload as MqttPublishMessage;
-        final String payload = MqttPublishPayload.bytesToStringAsString(payloadMessage.payload.message);
-
+        final MqttPublishMessage payloadMessage =
+            message.payload as MqttPublishMessage;
+        final String payload = MqttPublishPayload.bytesToStringAsString(
+            payloadMessage.payload.message);
+        _messageController.add({topic: payload});
         print('Message received: Topic = $topic, Payload = $payload');
       }
     });
   }
+
+  Stream<Map<String, String>> get messageStream => _messageController.stream;
 }

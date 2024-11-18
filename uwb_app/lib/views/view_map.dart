@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uwb_app/network/mqtt.dart';
 import 'package:uwb_app/views/scatter_chart.dart';
 
 class ViewMap extends StatefulWidget {
@@ -52,12 +53,28 @@ class _ViewMap extends State<ViewMap> {
     });
   }
 
+  void parseMessage(Map<String, String> message) {
+    final String extractString = message.values.first;
+    final regex = RegExp(
+        r'Name: (\w+); Coordinate X: ([\d.]+) Y: ([\d.]+); Time: ([\d:]+)');
+    final match = regex.firstMatch(extractString);
+    if (match != null) {
+      final String name = match.group(1)!;
+      final x = double.parse(match.group(2)!);
+      final y = double.parse(match.group(3)!);
+      final time = match.group(4);
+      addPoint(name, x, y);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    // Initialize with some points
-    points['A'] = Point(id: 'A', x: 1, y: 1, color: Colors.red);
-    points['B'] = Point(id: 'B', x: -2, y: 3, color: Colors.blue);
+    final MqttService mqttService = MqttService();
+    mqttService.connect().then((_) {
+      mqttService.listenFromFeeds();
+      mqttService.messageStream.listen(parseMessage);
+    });
   }
 
   @override
