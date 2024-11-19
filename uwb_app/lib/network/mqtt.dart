@@ -1,8 +1,19 @@
 import 'dart:async';
-
 import 'package:logging/logging.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+
+class ParsedMessage {
+  final String name;
+  final double x;
+  final double y;
+
+  ParsedMessage({
+    required this.name,
+    required this.x,
+    required this.y,
+  });
+}
 
 class MqttService {
   final String broker = 'io.adafruit.com';
@@ -12,7 +23,7 @@ class MqttService {
   final Logger logger = Logger('MqttService');
   final List<String> topics = ['coordinate'];
   late MqttServerClient client;
-  final StreamController<Map<String, String>> _messageController = StreamController.broadcast();
+  final StreamController<ParsedMessage> _messageController = StreamController.broadcast();
   MqttService() {
     client = MqttServerClient(broker, '');
   }
@@ -51,6 +62,7 @@ class MqttService {
     }
 
     subscribeToFeeds();
+    listenFromFeeds();
     print('Finished connecting to Adafruit IO');
   }
 
@@ -72,11 +84,21 @@ class MqttService {
             message.payload as MqttPublishMessage;
         final String payload = MqttPublishPayload.bytesToStringAsString(
             payloadMessage.payload.message);
-        _messageController.add({topic: payload});
         print('Message received: Topic = $topic, Payload = $payload');
+
+        final regex = RegExp(
+            r'Name: (\w+); Coordinate X: ([\d.]+) Y: ([\d.]+); Time: ([\d:]+)');
+        final match = regex.firstMatch(payload);
+        if (match != null) {
+          _messageController.add(ParsedMessage(
+            name: match.group(1)!,
+            x: double.parse(match.group(2)!),
+            y: double.parse(match.group(3)!),
+          ));
+        }
       }
     });
   }
 
-  Stream<Map<String, String>> get messageStream => _messageController.stream;
+  Stream<ParsedMessage> get messageStream => _messageController.stream;
 }
