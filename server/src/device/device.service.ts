@@ -25,8 +25,12 @@ export class DeviceService {
     }
 
     findAll() {
-        return this.deviceModel.find();
-    }
+        return this.deviceModel.find().populate({
+          path: 'histories',
+          select: 'x y createdAt',
+          options: { sort: { createdAt: -1 } },
+        });
+      }
 
     async update(id: string, updateDeviceDto: UpdateDeviceDto) {
         const history = await this.historyService.create(updateDeviceDto.history);
