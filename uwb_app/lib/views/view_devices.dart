@@ -12,7 +12,7 @@ class ViewDevices extends StatefulWidget {
 }
 
 class _ViewDevicesState extends State<ViewDevices> {
-  late Future<List<Device>> devices;
+  ValueNotifier<List<Device>> devicesNotifier = ValueNotifier<List<Device>>([]);
   final DeviceService deviceService = DeviceService();
   final MqttService mqttService = MqttService();
   Timer? _timer;
@@ -36,7 +36,7 @@ class _ViewDevicesState extends State<ViewDevices> {
     Listen to Mqtt stream
   */
   Future<void> initialize() async {
-    devices = deviceService.fetchAllDevices();
+    devicesNotifier.value = await deviceService.fetchAllDevices();
     mqttService.connect().then((_) {
       mqttService.messageStream.listen((message) async {
         await checkAndUpdateDevice(message.name, message.tx, message.ty);
@@ -58,7 +58,7 @@ class _ViewDevicesState extends State<ViewDevices> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> refreshPage() async {
-    final currentDevices = await devices;
+    final currentDevices = devicesNotifier.value;
     deviceService.fetchAllDevices().then((newDevices) {
       bool isSame = true;
       if (currentDevices.length != newDevices.length) {
@@ -67,7 +67,9 @@ class _ViewDevicesState extends State<ViewDevices> {
         for (int i = 0; i < currentDevices.length; i++) {
           if (currentDevices[i].id != newDevices[i].id ||
               currentDevices[i].name != newDevices[i].name ||
-              currentDevices[i].status != newDevices[i].status) {
+              currentDevices[i].status != newDevices[i].status ||
+              currentDevices[i].histories.length !=
+                  newDevices[i].histories.length) {
             isSame = false;
             break;
           }
@@ -75,7 +77,7 @@ class _ViewDevicesState extends State<ViewDevices> {
       }
       if (!isSame) {
         setState(() {
-          devices = Future.value(newDevices);
+          devicesNotifier.value = newDevices;
         });
       }
     });
@@ -86,7 +88,7 @@ class _ViewDevicesState extends State<ViewDevices> {
     If not, add the device to the DB and update the device's position.
   */
   Future<void> checkAndUpdateDevice(String name, double x, double y) async {
-    final devicesList = await devices;
+    final devicesList = devicesNotifier.value;
     for (var device in devicesList) {
       if (device.name == name) {
         final res = await deviceService.updateDeviceById(device.id, x, y);
@@ -103,140 +105,122 @@ class _ViewDevicesState extends State<ViewDevices> {
       title: 'Devices',
       home: RefreshIndicator(
         onRefresh: () async {
-          setState(() {
-            devices = deviceService.fetchAllDevices();
-          });
+          refreshPage();
         },
         child: Scaffold(
-            body: Padding(
-          padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
-          child: FutureBuilder<List<Device>>(
-            future: devices,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
+          body: Padding(
+            padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
+            child: ValueListenableBuilder<List<Device>>(
+              valueListenable: devicesNotifier,
+              builder: (context, devicesList, _) {
+                if (devicesList.isEmpty) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height,
+                      alignment: Alignment.center,
+                      child: const Center(child: Text('No devices found')),
                     ),
-                  ),
-                );
-              } else if (snapshot.hasError) {
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Container(
-                    height: MediaQuery.of(context).size.height,
-                    alignment: Alignment.center,
-                    child: Center(child: Text('Error: ${snapshot.error}')),
-                  ),
-                );
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Container(
-                    height: MediaQuery.of(context).size.height,
-                    alignment: Alignment.center,
-                    child: const Center(child: Text('No devices found')),
-                  ),
-                );
-              }
+                  );
+                }
 
-              final devicesList = snapshot.data!;
-
-              return GridView.builder(
-                itemCount: devicesList.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 7 / 7,
-                ),
-                itemBuilder: (context, index) {
-                  final device = devicesList[index];
-                  return Card(
+                return GridView.builder(
+                  itemCount: devicesList.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10.0,
+                    mainAxisSpacing: 10.0,
+                    childAspectRatio: 7 / 7,
+                  ),
+                  itemBuilder: (context, index) {
+                    final device = devicesList[index];
+                    return Card(
                       elevation: 4.0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: InkWell(
-                          onTap: () {
-                            context.goNamed('DeviceInfo', extra: device.id);
-                          },
-                          child: Column(
-                            children: [
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      margin: const EdgeInsets.only(
-                                          top: 10.0, left: 15.0),
-                                      width: 10.0,
-                                      height: 10.0,
-                                      decoration: BoxDecoration(
+                        onTap: () {
+                          context.goNamed('DeviceInfo', extra: device.id);
+                        },
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.topLeft,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(
+                                        top: 10.0, left: 15.0),
+                                    width: 10.0,
+                                    height: 10.0,
+                                    decoration: BoxDecoration(
+                                      color: device.status == 'Active'
+                                          ? Colors.green
+                                          : Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5.0),
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 10.0),
+                                    child: Text(
+                                      device.status,
+                                      style: TextStyle(
+                                        fontSize: 12.0,
                                         color: device.status == 'Active'
                                             ? Colors.green
                                             : Colors.red,
-                                        shape: BoxShape.circle,
                                       ),
                                     ),
-                                    const SizedBox(width: 5.0),
-                                    Container(
-                                        margin:
-                                            const EdgeInsets.only(top: 10.0),
-                                        child: Text(
-                                          device.status,
-                                          style: TextStyle(
-                                            fontSize: 12.0,
-                                            color: device.status == 'Active'
-                                                ? Colors.green
-                                                : Colors.red,
-                                          ),
-                                        ))
-                                  ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Device Image
+                            Image(
+                              image: AssetImage('assets/${device.img}'),
+                              height: 80,
+                            ),
+                            // Device Name
+                            Align(
+                              alignment: Alignment.topLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 10.0, left: 15.0),
+                                child: Text(
+                                  device.name,
+                                  style: const TextStyle(
+                                    fontSize: 18.0,
+                                    fontFamily: 'BabasNee',
+                                  ),
                                 ),
                               ),
-                              // Device Image
-                              Image(
-                                image: AssetImage('assets/${device.img}'),
-                                height: 80,
+                            ),
+                            // Device Location
+                            Align(
+                              alignment: Alignment.topLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 15.0),
+                                child: Text(
+                                  device.location,
+                                  style: const TextStyle(
+                                    fontSize: 12.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                               ),
-                              // Device Name
-                              Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(
-                                        top: 10.0, left: 15.0),
-                                    child: Text(
-                                      device.name,
-                                      style: const TextStyle(
-                                        fontSize: 18.0,
-                                        fontFamily: 'BabasNee',
-                                      ),
-                                    ),
-                                  )),
-                              // Device Location
-                              Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 15.0),
-                                    child: Text(
-                                      device.location,
-                                      style: const TextStyle(
-                                        fontSize: 12.0,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  )),
-                            ],
-                          )));
-                },
-              );
-            },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
