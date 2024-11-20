@@ -34,11 +34,16 @@ export class DeviceService {
 
     async update(id: string, updateDeviceDto: UpdateDeviceDto) {
         const history = await this.historyService.create(updateDeviceDto.history);
-        return this.deviceModel.findByIdAndUpdate(
+        await this.deviceModel.findByIdAndUpdate(
             id,
             { $push: { histories: history._id } },
             { new: true }
         );
+        return this.deviceModel.findById(id).populate({
+            path: 'histories',
+            select: 'x y createdAt',
+            options: { sort: { createdAt: -1 } }
+        });
     }
 
     async remove(id: string) {

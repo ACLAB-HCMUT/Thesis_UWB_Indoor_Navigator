@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
@@ -14,32 +15,75 @@ class _ViewDevicesState extends State<ViewDevices> {
   late Future<List<Device>> devices;
   final DeviceService deviceService = DeviceService();
   final MqttService mqttService = MqttService();
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     initialize();
+    startPeriodFetch();
+  }
+
+  @override
+  void dispose() {
+    mqttService.disconnect();
+    _timer?.cancel();
+    super.dispose();
   }
 
   /*
-  Fetch data from DB and connect to the MQTT server.
-  Listen to Mqtt stream
+    Fetch data from DB and connect to the MQTT server.
+    Listen to Mqtt stream
   */
   Future<void> initialize() async {
     devices = deviceService.fetchAllDevices();
     mqttService.connect().then((_) {
       mqttService.messageStream.listen((message) async {
-        await checkAndUpdateDevice(message.name, message.x, message.y);
-        setState(() {
-          devices = deviceService.fetchAllDevices();
-        });
+        await checkAndUpdateDevice(message.name, message.tx, message.ty);
+        refreshPage();
       });
     });
   }
 
   /*
-  Check if device is already in DB or not. If it is, update the device's position. 
-  If not, add the device to the DB and update the device's position.
+    Fetch data from DB every 5 seconds
+  */
+  Future<void> startPeriodFetch() async {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      refreshPage();
+    });
+  }
+
+  /*
+    Check if two lists are not equal then refresh the page
+  */
+  Future<void> refreshPage() async {
+    final currentDevices = await devices;
+    deviceService.fetchAllDevices().then((newDevices) {
+      bool isSame = true;
+      if (currentDevices.length != newDevices.length) {
+        isSame = false;
+      } else {
+        for (int i = 0; i < currentDevices.length; i++) {
+          if (currentDevices[i].id != newDevices[i].id ||
+              currentDevices[i].name != newDevices[i].name ||
+              currentDevices[i].status != newDevices[i].status) {
+            isSame = false;
+            break;
+          }
+        }
+      }
+      if (!isSame) {
+        setState(() {
+          devices = Future.value(newDevices);
+        });
+      }
+    });
+  }
+
+  /*
+    Check if device is already in DB or not. If it is, update the device's position. 
+    If not, add the device to the DB and update the device's position.
   */
   Future<void> checkAndUpdateDevice(String name, double x, double y) async {
     final devicesList = await devices;
@@ -57,24 +101,46 @@ class _ViewDevicesState extends State<ViewDevices> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Devices',
-      home: Scaffold(
-          body: RefreshIndicator(
+      home: RefreshIndicator(
         onRefresh: () async {
           setState(() {
             devices = deviceService.fetchAllDevices();
           });
         },
-        child: Padding(
+        child: Scaffold(
+            body: Padding(
           padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
           child: FutureBuilder<List<Device>>(
             future: devices,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
               } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height,
+                    alignment: Alignment.center,
+                    child: Center(child: Text('Error: ${snapshot.error}')),
+                  ),
+                );
               } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Center(child: Text('No devices found'));
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    height: MediaQuery.of(context).size.height,
+                    alignment: Alignment.center,
+                    child: const Center(child: Text('No devices found')),
+                  ),
+                );
               }
 
               final devicesList = snapshot.data!;
@@ -121,9 +187,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                                         margin:
                                             const EdgeInsets.only(top: 10.0),
                                         child: Text(
-                                          device.status == 'Active'
-                                              ? 'Active'
-                                              : 'Not Active',
+                                          device.status,
                                           style: TextStyle(
                                             fontSize: 12.0,
                                             color: device.status == 'Active'
@@ -172,8 +236,8 @@ class _ViewDevicesState extends State<ViewDevices> {
               );
             },
           ),
-        ),
-      )),
+        )),
+      ),
     );
   }
 }

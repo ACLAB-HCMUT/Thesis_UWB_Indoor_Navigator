@@ -5,13 +5,25 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 
 class ParsedMessage {
   final String name;
-  final double x;
-  final double y;
+  final double tx;
+  final double ty;
+  final double b1x;
+  final double b1y;
+  final double b2x;
+  final double b2y;
+  final double b3x;
+  final double b3y;
 
   ParsedMessage({
     required this.name,
-    required this.x,
-    required this.y,
+    required this.tx,
+    required this.ty,
+    required this.b1x,
+    required this.b1y,
+    required this.b2x,
+    required this.b2y,
+    required this.b3x,
+    required this.b3y,
   });
 }
 
@@ -23,7 +35,8 @@ class MqttService {
   final Logger logger = Logger('MqttService');
   final List<String> topics = ['coordinate'];
   late MqttServerClient client;
-  final StreamController<ParsedMessage> _messageController = StreamController.broadcast();
+  final StreamController<ParsedMessage> _messageController =
+      StreamController.broadcast();
   MqttService() {
     client = MqttServerClient(broker, '');
   }
@@ -87,17 +100,31 @@ class MqttService {
         print('Message received: Topic = $topic, Payload = $payload');
 
         final regex = RegExp(
-            r'Name: (\w+); Coordinate X: ([\d.]+) Y: ([\d.]+); Time: ([\d:]+)');
+            r'Name: (\w+); Coordinate T: ([\d.]+) ([\d.]+); B1: ([\d.]+) ([\d.]+); B2: ([\d.]+) ([\d.]+); B3: ([\d.]+) ([\d.]+)');
         final match = regex.firstMatch(payload);
+        print ('Match: $match');
         if (match != null) {
           _messageController.add(ParsedMessage(
             name: match.group(1)!,
-            x: double.parse(match.group(2)!),
-            y: double.parse(match.group(3)!),
+            tx: double.parse(match.group(2)!),
+            ty: double.parse(match.group(3)!),
+            b1x: double.parse(match.group(4)!),
+            b1y: double.parse(match.group(5)!),
+            b2x: double.parse(match.group(6)!),
+            b2y: double.parse(match.group(7)!),
+            b3x: double.parse(match.group(8)!),
+            b3y: double.parse(match.group(9)!),
           ));
         }
       }
     });
+  }
+
+  Future<void> disconnect() async {
+    print('Disconnecting from Adafruit IO...');
+    client.disconnect();
+    _messageController.close();
+    print('Disconnected from Adafruit IO');
   }
 
   Stream<ParsedMessage> get messageStream => _messageController.stream;
