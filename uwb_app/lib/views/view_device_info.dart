@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
 import 'package:intl/intl.dart';
+import 'package:uwb_app/network/mqtt.dart';
 
 class ViewDeviceInfo extends StatefulWidget {
   final String id;
@@ -12,33 +14,102 @@ class ViewDeviceInfo extends StatefulWidget {
 }
 
 class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
-  late Future<Device> device;
+  ValueNotifier<Device?> deviceNotifier = ValueNotifier<Device?>(null);
   final DeviceService deviceService = DeviceService();
+  List<BaseStation> baseStations = [];
+  final BaseStationService baseStationService = BaseStationService();
+  final MqttService mqttService = MqttService();
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
-    device = deviceService.fetchDeviceById(widget.id);
+    initialize();
+    startPeriodFetch();
+  }
+
+  Future<void> initialize() async {
+    deviceNotifier.value = await deviceService.fetchDeviceById(widget.id);
+    baseStations = await baseStationService.fetchAllBaseStations();
+    mqttService.messageStream.listen((message) async {
+      await checkAndUpdateDevice(message);
+      refreshPage();
+    });
+  }
+
+  Future<void> startPeriodFetch() async {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      refreshPage();
+    });
+  }
+
+  Future<void> refreshPage() async {
+    baseStations = await baseStationService.fetchAllBaseStations();
+    Device newDevice =
+        await deviceService.fetchDeviceById(widget.id).then((res) {
+      res.defineLocation(baseStations);
+      return res;
+    });
+    deviceNotifier.value = newDevice;
+  }
+
+  Future<void> checkAndUpdateDevice(ParsedMessage message) async {
+    final device = deviceNotifier.value;
+    List<BaseStation> newBaseStations = [
+      BaseStation(name: 'B1', x: message.b1x, y: message.b1y),
+      BaseStation(name: 'B2', x: message.b2x, y: message.b2y),
+      BaseStation(name: 'B3', x: message.b3x, y: message.b3y),
+    ];
+
+    if (baseStations.isEmpty) {
+      for (var base in newBaseStations) {
+        BaseStation addedBase =
+            await baseStationService.addBaseByName(base.name);
+        baseStations.add(addedBase);
+      }
+    }
+    for (var newBase in newBaseStations) {
+      for (var i = 0; i < baseStations.length; i++) {
+        if (baseStations[i].name == newBase.name) {
+          baseStations[i] = await baseStationService.updateBaseById(
+              baseStations[i].id, newBase.x, newBase.y);
+        }
+      }
+    }
+
+    if (device!.name == message.name) {
+      await deviceService.updateDeviceById(device.id, message.tx, message.ty);
+      return;
+    }
+    final newDevice = await deviceService.addDeviceByName(message.name);
+    await deviceService.updateDeviceById(newDevice.id, message.tx, message.ty);
+  }
+
+  @override
+  void dispose() {
+    deviceNotifier.dispose();
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-          padding: const EdgeInsets.only(
-              top: 20.0, bottom: 20, left: 10.0, right: 10.0),
-          child: FutureBuilder<Device>(
-              future: device,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+    return MaterialApp(
+      title: 'Device Info',
+      home: RefreshIndicator(
+        onRefresh: () async {
+          refreshPage();
+        },
+        child: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.only(
+                top: 20.0, bottom: 20, left: 10.0, right: 10.0),
+            child: ValueListenableBuilder<Device?>(
+              valueListenable: deviceNotifier,
+              builder: (context, device, _) {
+                if (device == null) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: Text('No device found'));
-                }
-                final device = snapshot.data!;
                 return SingleChildScrollView(
                   child: Column(
                     children: [
@@ -47,7 +118,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back),
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            context.goNamed('Devices');
                           },
                         ),
                       ),
@@ -334,7 +405,11 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                     ],
                   ),
                 );
-              })),
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

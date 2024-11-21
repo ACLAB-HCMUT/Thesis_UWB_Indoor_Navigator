@@ -13,7 +13,9 @@ class ViewDevices extends StatefulWidget {
 
 class _ViewDevicesState extends State<ViewDevices> {
   ValueNotifier<List<Device>> devicesNotifier = ValueNotifier<List<Device>>([]);
+  List<BaseStation> baseStations = [];
   final DeviceService deviceService = DeviceService();
+  final BaseStationService baseStationService = BaseStationService();
   final MqttService mqttService = MqttService();
   Timer? _timer;
 
@@ -26,6 +28,7 @@ class _ViewDevicesState extends State<ViewDevices> {
 
   @override
   void dispose() {
+    devicesNotifier.dispose();
     mqttService.disconnect();
     _timer?.cancel();
     super.dispose();
@@ -37,9 +40,10 @@ class _ViewDevicesState extends State<ViewDevices> {
   */
   Future<void> initialize() async {
     devicesNotifier.value = await deviceService.fetchAllDevices();
+    baseStations = await baseStationService.fetchAllBaseStations();
     mqttService.connect().then((_) {
       mqttService.messageStream.listen((message) async {
-        await checkAndUpdateDevice(message.name, message.tx, message.ty);
+        await checkAndUpdateDevice(message);
         refreshPage();
       });
     });
@@ -58,45 +62,53 @@ class _ViewDevicesState extends State<ViewDevices> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> refreshPage() async {
-    final currentDevices = devicesNotifier.value;
-    deviceService.fetchAllDevices().then((newDevices) {
-      bool isSame = true;
-      if (currentDevices.length != newDevices.length) {
-        isSame = false;
-      } else {
-        for (int i = 0; i < currentDevices.length; i++) {
-          if (currentDevices[i].id != newDevices[i].id ||
-              currentDevices[i].name != newDevices[i].name ||
-              currentDevices[i].status != newDevices[i].status ||
-              currentDevices[i].histories.length !=
-                  newDevices[i].histories.length) {
-            isSame = false;
-            break;
-          }
-        }
-      }
-      if (!isSame) {
-        setState(() {
-          devicesNotifier.value = newDevices;
-        });
-      }
+    baseStations = await baseStationService.fetchAllBaseStations();
+    List<Device> newDevices = await deviceService.fetchAllDevices().then((res) {
+      return res.map((device) {
+        device.defineLocation(baseStations);
+        return device;
+      }).toList();
     });
+    devicesNotifier.value = newDevices;
   }
 
   /*
     Check if device is already in DB or not. If it is, update the device's position. 
     If not, add the device to the DB and update the device's position.
   */
-  Future<void> checkAndUpdateDevice(String name, double x, double y) async {
+  Future<void> checkAndUpdateDevice(ParsedMessage message) async {
     final devicesList = devicesNotifier.value;
+    List<BaseStation> newBaseStations = [
+      BaseStation(name: 'B1', x: message.b1x, y: message.b1y),
+      BaseStation(name: 'B2', x: message.b2x, y: message.b2y),
+      BaseStation(name: 'B3', x: message.b3x, y: message.b3y),
+    ];
+
+    if (baseStations.isEmpty) {
+      for (var base in newBaseStations) {
+        BaseStation addedBase =
+            await baseStationService.addBaseByName(base.name);
+        baseStations.add(addedBase);
+      }
+    }
+    for (var newBase in newBaseStations) {
+      for (var i = 0; i < baseStations.length; i++) {
+        if (baseStations[i].name == newBase.name) {
+          baseStations[i] = await baseStationService.updateBaseById(
+              baseStations[i].id, newBase.x, newBase.y);
+        }
+      }
+    }
+
     for (var device in devicesList) {
-      if (device.name == name) {
-        final res = await deviceService.updateDeviceById(device.id, x, y);
+      if (device.name == message.name) {
+        final res = await deviceService.updateDeviceById(
+            device.id, message.tx, message.ty);
         return;
       }
     }
-    final newDevice = await deviceService.getDeviceById(name);
-    final res = await deviceService.updateDeviceById(newDevice.id, x, y);
+    final newDevice = await deviceService.addDeviceByName(message.name);
+    await deviceService.updateDeviceById(newDevice.id, message.tx, message.ty);
   }
 
   @override
