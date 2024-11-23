@@ -1,103 +1,192 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-class PositionScatterChart extends StatelessWidget {
+enum PainterType {
+  circle,
+  square,
+  cross,
+}
+
+class Point {
+  String id;
+  String name;
+  double x;
+  double y;
+  Color color;
+
+  Point({
+    this.id = "",
+    this.name = "",
+    this.x = 0,
+    this.y = 0,
+    this.color = Colors.grey,
+  });
+
+  Point copyWithNewPosition(String name, double newX, double newY,
+      {Color? newColor}) {
+    return Point(
+      id: id,
+      name: name,
+      x: newX,
+      y: newY,
+      color: newColor ?? color,
+    );
+  }
+}
+
+class PositionScatterChart extends StatefulWidget {
   final Map<String, Point> points;
   final double minX;
   final double maxX;
   final double minY;
   final double maxY;
 
-  const PositionScatterChart({
+  PositionScatterChart({
     super.key,
     required this.points,
-    this.minX = -10,
+    this.minX = 0,
     this.maxX = 10,
-    this.minY = -10,
+    this.minY = 0,
     this.maxY = 10,
   });
 
   @override
-  Widget build(BuildContext context) {
-  return SizedBox(
-      width: 300,
-      height: 300,
-      child: ScatterChart(
-        ScatterChartData(
-          scatterSpots: points.values.map((point) =>
-            ScatterSpot(
-              point.x,
-              point.y,
-              color: point.color,
-              radius: 8,
-            ),
-          ).toList(),
-          titlesData: const FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 2,
-                reservedSize: 30,
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 2,
-                reservedSize: 30,
-              ),
-            ),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: true),
-          gridData: const FlGridData(show: true),
-          scatterTouchData: ScatterTouchData(
-            enabled: true,
-            touchTooltipData: ScatterTouchTooltipData(
-              tooltipBgColor: Colors.black,
-              getTooltipItems: (ScatterSpot spot) {
-                // Find the point corresponding to this spot
-                final point = points.values.firstWhere(
-                  (p) => p.x == spot.x && p.y == spot.y,
-                  orElse: () => Point(id: '', x: spot.x, y: spot.y),
-                );
-                return ScatterTooltipItem(
-                  'ID: ${point.id}\n(${spot.x.toStringAsFixed(1)}, ${spot.y.toStringAsFixed(1)})',
-                  textStyle: const TextStyle(color: Colors.white),
-                );
-              },
-            ),
-          ),
-          minX: minX,
-          maxX: maxX,
-          minY: minY,
-          maxY: maxY,
-        ),
-      ),
-    );
-  }
+  _PositionScatterChartState createState() => _PositionScatterChartState();
 }
 
-class Point {
-  final String id;
-  final double x;
-  final double y;
-  final Color color;
+class _PositionScatterChartState extends State<PositionScatterChart> {
+  late double minX;
+  late double maxX;
+  late double minY;
+  late double maxY;
 
-  Point({
-    required this.id,
-    required this.x,
-    required this.y,
-    this.color = Colors.red,
-  });
+  @override
+  void initState() {
+    super.initState();
+    minX = widget.minX;
+    maxX = widget.maxX;
+    minY = widget.minY;
+    maxY = widget.maxY;
+  }
 
-  Point copyWithNewPosition(double newX, double newY) {
-    return Point(
-      id: id,
-      x: newX,
-      y: newY,
-      color: color,
+  static FlDotPainter _getPaint(PainterType type, double size, Color color) {
+    switch (type) {
+      case PainterType.circle:
+        return FlDotCirclePainter(
+          color: color,
+          radius: size,
+        );
+      case PainterType.square:
+        return FlDotSquarePainter(
+          color: color,
+          size: size * 2,
+          strokeWidth: 0,
+        );
+      case PainterType.cross:
+        return FlDotCrossPainter(
+          color: color,
+          size: size * 2,
+          width: max(size / 5, 2),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: GestureDetector(
+          onScaleUpdate: (ScaleUpdateDetails scaleDetails) {
+            setState(() {
+              var scale = scaleDetails.scale;
+              if (scale > 1) {
+                minX += maxX * 0.01;
+                maxX -= maxX * 0.01;
+                minY += maxY * 0.01;
+                maxY -= maxY * 0.01;
+              } else {
+                minX -= maxX * 0.01;
+                maxX += maxX * 0.01;
+                minY -= maxY * 0.01;
+                maxY += maxY * 0.01;
+              }
+            });
+          },
+          child: SizedBox(
+            height: double.infinity,
+            width: double.infinity,
+            child: ScatterChart(ScatterChartData(
+              scatterSpots: widget.points.values
+                  .map((point) => ScatterSpot(
+                        point.x,
+                        point.y,
+                        dotPainter: _getPaint(
+                          PainterType.circle,
+                          5,
+                          point.color,
+                        ),
+                      ))
+                  .toList(),
+              minX: 0,
+              maxX: maxX,
+              minY: 0,
+              maxY: maxY,
+              borderData: FlBorderData(
+                show: false,
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawHorizontalLine: true,
+                checkToShowHorizontalLine: (value) => true,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: Colors.grey.withOpacity(0.2),
+                ),
+                drawVerticalLine: true,
+                checkToShowVerticalLine: (value) => true,
+                getDrawingVerticalLine: (value) => FlLine(
+                  color: Colors.grey.withOpacity(0.2),
+                ),
+              ),
+              titlesData: const FlTitlesData(
+                show: false,
+              ),
+              scatterTouchData: ScatterTouchData(
+                enabled: true,
+                handleBuiltInTouches: false,
+                touchTooltipData: ScatterTouchTooltipData(
+                  tooltipPadding: const EdgeInsets.all(8),
+                  getTooltipColor: (ScatterSpot touchedBarSpot) {
+                    return touchedBarSpot.dotPainter.mainColor.withOpacity(0.5);
+                  },
+                  getTooltipItems: (ScatterSpot touchedSpot) {
+                    final point = widget.points.values.firstWhere(
+                      (p) => p.x == touchedSpot.x && p.y == touchedSpot.y,
+                      orElse: () =>
+                          Point(id: '', x: touchedSpot.x, y: touchedSpot.y),
+                    );
+                    return ScatterTooltipItem(
+                      '(${point.name} ${touchedSpot.x}, ${touchedSpot.y})',
+                      textStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    );
+                  },
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                ),
+              ),
+              showingTooltipIndicators: List.generate(
+                widget.points.length,
+                (index) => index,
+              ),
+            )),
+          ),
+        ),
+      ),
     );
   }
 }

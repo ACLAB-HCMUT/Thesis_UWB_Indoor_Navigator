@@ -31,8 +31,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
   Future<void> initialize() async {
     deviceNotifier.value = await deviceService.fetchDeviceById(widget.id);
     baseStations = await baseStationService.fetchAllBaseStations();
-    mqttService.messageStream.listen((message) async {
-      await checkAndUpdateDevice(message);
+    mqttService.messageStream.listen((message) {
       refreshPage();
     });
   }
@@ -53,41 +52,9 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
     deviceNotifier.value = newDevice;
   }
 
-  Future<void> checkAndUpdateDevice(ParsedMessage message) async {
-    final device = deviceNotifier.value;
-    List<BaseStation> newBaseStations = [
-      BaseStation(name: 'B1', x: message.b1x, y: message.b1y),
-      BaseStation(name: 'B2', x: message.b2x, y: message.b2y),
-      BaseStation(name: 'B3', x: message.b3x, y: message.b3y),
-    ];
-
-    if (baseStations.isEmpty) {
-      for (var base in newBaseStations) {
-        BaseStation addedBase =
-            await baseStationService.addBaseByName(base.name);
-        baseStations.add(addedBase);
-      }
-    }
-    for (var newBase in newBaseStations) {
-      for (var i = 0; i < baseStations.length; i++) {
-        if (baseStations[i].name == newBase.name) {
-          baseStations[i] = await baseStationService.updateBaseById(
-              baseStations[i].id, newBase.x, newBase.y);
-        }
-      }
-    }
-
-    if (device!.name == message.name) {
-      await deviceService.updateDeviceById(device.id, message.tx, message.ty);
-      return;
-    }
-    final newDevice = await deviceService.addDeviceByName(message.name);
-    await deviceService.updateDeviceById(newDevice.id, message.tx, message.ty);
-  }
-
   @override
   void dispose() {
-    deviceNotifier.dispose();
+    // deviceNotifier.dispose();
     _timer?.cancel();
     super.dispose();
   }
@@ -111,6 +78,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
                     children: [
                       Align(
