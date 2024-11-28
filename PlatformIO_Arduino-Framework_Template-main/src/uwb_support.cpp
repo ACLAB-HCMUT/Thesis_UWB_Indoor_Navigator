@@ -17,10 +17,12 @@ String preparePublishMessage (float x, float y) {
     } else if (UWB_MODE == 1) {
         message = "Name: BASE" + String (UWB_B_NUMBER);
     }
-
-    message += "; Coordinate X: " + String (x) + " Y: " + String (y);
-    timeClient.update();
-    message += "; Time: " + timeClient.getFormattedTime();
+    message += "; T: " + String(tagPos[0]) + " " + String(tagPos[1]) + "; B1: " + String(basePos[0][0]) + " " + String(basePos[0][1]) 
+                                                                    + "; B2: " + String(basePos[1][0]) + " " + String(basePos[1][1]) 
+                                                                    + "; B3: " + String(basePos[2][0]) + " " + String(basePos[2][1]);
+    // message += "; Coordinate X: " + String (x) + " Y: " + String (y);
+    // timeClient.update();
+    // message += "; Time: " + timeClient.getFormattedTime();
     return message;
 }
 
