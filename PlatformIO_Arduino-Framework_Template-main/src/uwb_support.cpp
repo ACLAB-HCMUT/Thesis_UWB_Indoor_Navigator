@@ -8,7 +8,7 @@ int UWB_B_NUMBER = 0; // Base station number
 float distancesList[3] = {0.0, 0.0, 0.0};
 int distanceNumber = 0; // number of available distances
 float tagPos[2] = {0.0, 0.0};
-float basePos[3][2] = {{0,0}, {0,2.1}, {1.6,0}};
+float basePos[3][2] = {{0,0}, {0,3.76}, {6.4,0}};
 
 String preparePublishMessage (float x, float y) {
     String message = "";
@@ -17,7 +17,7 @@ String preparePublishMessage (float x, float y) {
     } else if (UWB_MODE == 1) {
         message = "Name: BASE" + String (UWB_B_NUMBER);
     }
-    message += "; T: " + String(tagPos[0]) + " " + String(tagPos[1]) + "; B1: " + String(basePos[0][0]) + " " + String(basePos[0][1]) 
+    message += "; Coordinate T: " + String(tagPos[0]) + " " + String(tagPos[1]) + "; B1: " + String(basePos[0][0]) + " " + String(basePos[0][1]) 
                                                                     + "; B2: " + String(basePos[1][0]) + " " + String(basePos[1][1]) 
                                                                     + "; B3: " + String(basePos[2][0]) + " " + String(basePos[2][1]);
     // message += "; Coordinate X: " + String (x) + " Y: " + String (y);
@@ -134,6 +134,7 @@ void calculateTagPosition () {
 
 void uwbTask (void *pvParameters) {
     while (mqttConnectedSignal == 0) {
+        if (UWB_MODE == 1) break;
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     M5.begin();
@@ -156,5 +157,6 @@ void uwbTask (void *pvParameters) {
         tagPos[0] = 0.0;
         tagPos[1] = 0.0;
         distanceNumber = 0;
+        delay(2000);
     }
 }
