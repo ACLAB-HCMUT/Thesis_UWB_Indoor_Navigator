@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:quickalert/quickalert.dart';
 import 'package:uwb_app/network/device.dart';
 import 'package:uwb_app/network/mqtt.dart';
 
@@ -78,6 +79,12 @@ class _ViewDevicesState extends State<ViewDevices> {
       home: RefreshIndicator(
         onRefresh: () async {
           refreshPage();
+          QuickAlert.show(
+            context: context,
+            type: QuickAlertType.error,
+            title: 'Oops...',
+            text: 'Sorry, something went wrong',
+          );
         },
         child: Scaffold(
           body: Padding(

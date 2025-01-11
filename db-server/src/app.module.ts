@@ -1,9 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HistoryModule } from './history/history.module';
 import { DeviceModule } from './device/device.module';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { JwtAccessTokenAuthGuard } from './auth/jwt.guard';
 
 @Module({
     imports: [
@@ -12,8 +16,23 @@ import { DeviceModule } from './device/device.module';
         ),
         HistoryModule,
         DeviceModule,
+        UserModule,
+        AuthModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [
+        AppService,
+        {
+            provide: APP_GUARD,
+            useClass: JwtAccessTokenAuthGuard,
+        },
+        {
+            provide: APP_PIPE,
+            useValue: new ValidationPipe({
+                transform: true,
+                transformOptions: { enableImplicitConversion: true },
+            }),
+        },
+    ],
 })
 export class AppModule {}

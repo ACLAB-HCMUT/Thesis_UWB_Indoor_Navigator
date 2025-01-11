@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-String baseUrl = 'http://192.168.1.10:3000/device';
+String baseUrl = 'http://172.21.64.1:3000/device';
 
 class History {
   final String id;

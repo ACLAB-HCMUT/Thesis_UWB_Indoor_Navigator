@@ -3,7 +3,9 @@ import { DeviceService } from './device.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/auth/public.decorator';
 
+@Public()
 @ApiTags('Device')
 @Controller('device')
 export class DeviceController {

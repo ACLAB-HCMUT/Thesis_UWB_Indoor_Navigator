@@ -42,7 +42,7 @@ class PositionScatterChart extends StatefulWidget {
   final double minY;
   final double maxY;
 
-  PositionScatterChart({
+  const PositionScatterChart({
     super.key,
     required this.points,
     this.minX = 0,
