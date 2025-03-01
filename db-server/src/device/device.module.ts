@@ -10,7 +10,7 @@ import { HistoryModule } from 'src/history/history.module';
         MongooseModule.forFeature([
             { name: Device.name, schema: DeviceSchema },
         ]),
-		HistoryModule
+        HistoryModule,
     ],
     controllers: [DeviceController],
     providers: [DeviceService],

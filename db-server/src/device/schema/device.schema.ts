@@ -9,8 +9,13 @@ export class Device {
     @Prop({ required: true })
     name: string;
 
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: History.name }] })
+    @Prop({
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: History.name }],
+    })
     histories: History[];
+
+    @Prop({ default: 0 })
+    device_type: number;
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device);

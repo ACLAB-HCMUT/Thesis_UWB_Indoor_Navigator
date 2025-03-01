@@ -7,7 +7,9 @@ import { History } from './schema/history.schema';
 
 @Injectable()
 export class HistoryService {
-    constructor(@InjectModel(History.name) private historyModel: Model<History>) {}
+    constructor(
+        @InjectModel(History.name) private historyModel: Model<History>,
+    ) {}
     create(createHistoryDto: CreateHistoryDto) {
         return new this.historyModel(createHistoryDto).save();
     }
@@ -21,14 +23,14 @@ export class HistoryService {
     }
 
     update(id: string, updateHistoryDto: UpdateHistoryDto) {
-        return this.historyModel.updateOne({_id: id}, updateHistoryDto);
+        return this.historyModel.updateOne({ _id: id }, updateHistoryDto);
     }
 
     remove(id: string) {
-        return this.historyModel.deleteOne({_id: id});
+        return this.historyModel.deleteOne({ _id: id });
     }
 
-    bulkRemove(historyIds: string[]){
+    bulkRemove(historyIds: string[]) {
         return this.historyModel.deleteMany({ _id: { $in: historyIds } });
     }
 }
