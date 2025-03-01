@@ -1,6 +1,9 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDeviceDto {
     @ApiProperty()
-    name: string
+    name: string;
+
+    @ApiProperty({ required: false, default: 0 })
+    device_type: number = 0;
 }

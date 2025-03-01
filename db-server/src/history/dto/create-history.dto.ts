@@ -1,8 +1,8 @@
-import { ApiProperty } from "@nestjs/swagger"
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateHistoryDto {
     @ApiProperty()
-    x: number
+    x: number;
     @ApiProperty()
-    y: number
+    y: number;
 }
