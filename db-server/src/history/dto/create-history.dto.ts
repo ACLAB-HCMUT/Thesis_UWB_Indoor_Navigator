@@ -1,8 +1,11 @@
-import { ApiProperty } from "@nestjs/swagger"
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNumber } from 'class-validator';
 
 export class CreateHistoryDto {
     @ApiProperty()
-    x: number
+    @IsNumber()
+    x: number;
     @ApiProperty()
-    y: number
+    @IsNumber()
+    y: number;
 }
