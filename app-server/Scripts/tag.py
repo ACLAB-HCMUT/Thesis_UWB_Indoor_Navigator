@@ -3,21 +3,30 @@ import numpy as np
 from anchor import Anchor
 
 class Tag:
-    def __init__(self, tag_id=None, anchor_list=[]):
+    def __init__(self, tag_id=None, name=None, anchor_list=None):
         self.tag_id = tag_id
+        self.name = name
         self.position = None
-        self.anchor_list = anchor_list
+        self.anchor_list = anchor_list if anchor_list is not None else []  # Ensure it's always a list
 
-    def add_anchor(self, anchor):
-        self.anchor_list.append(anchor)
-        
-    def update(self, tag_id, anchor_distance_list):
-        self.tag_id = tag_id
-        for index, value in anchor_distance_list.items():
-            for anchor in self.anchor_list:
-                if anchor.id == index:
+    def update(self, tag_id = None, name=None,  anchor_distance_list = None):
+        if tag_id: 
+            self.tag_id = tag_id
+        if name:
+            self.name = name
+        if anchor_distance_list:
+            for name, value in anchor_distance_list.items():
+                anchor = next((anchor for anchor in self.anchor_list if anchor.name == name), None)
+                if anchor:
                     anchor.update_distance(value)
-                    break
+                else:
+                    print(f"Anchor {name} not found in tag {self.name}")
+                    
+    def add_anchor(self, anchor):
+        if isinstance(anchor, Anchor):
+            self.anchor_list.append(anchor)
+        else:
+            print("Invalid anchor object")
             
     def calculate_position(self):
         """

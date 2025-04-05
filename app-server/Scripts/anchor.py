@@ -1,6 +1,7 @@
 class Anchor:
-    def __init__(self, id = None, x=None, y=None, distance_to_tag=None):
+    def __init__(self, id = None, name = None, x=None, y=None, distance_to_tag=None):
         self.id = id
+        self.name = name
         self.x = x
         self.y = y
         self.distance_to_tag = distance_to_tag

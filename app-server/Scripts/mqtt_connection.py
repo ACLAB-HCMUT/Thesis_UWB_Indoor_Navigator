@@ -7,34 +7,33 @@ from anchor import Anchor
 def parse_mqtt_message(message):
     """
     Parse the MQTT message and return the tag ID and anchor list.
-    Message format: [tag1:{an0:12.1,an1:12.2,an2:12.3}]
+    Message format: [TAG1:{an0:12.1,an1:12.2,an2:12.3}]
     Returns:
-        tag_id (str): The tag ID (e.g., "tag1").
+        name (str): THe name of the tag (e.g., "TAG1").
         anchor_distance_list (dict): A dictionary of anchors and their values (e.g., {"an0": 12.1, "an1": 12.2, "an2": 12.3}).
     """
     try:
         # Match the message format using a regular expression
-        match = re.match(r"\[tag(\d+):\{(.+)\}\]", message)
+        match = re.match(r"\[TAG(\d+):\{(.+)\}\]", message)
         if not match:
             raise ValueError("Message format is invalid")
         
         # Extract the tag ID and anchor data
-        tag_id = int(re.search(r"\d+", match.group(1)).group())  # Extract the tag ID as an integer
+        tag_name = f"TAG{match.group(1)}"
         anchor_data = match.group(2)
 
         anchor_distance_list = {}
         for anchor in anchor_data.split(","):
-            key, value = anchor.split(":")
-            key = int(re.search(r"\d+", key).group())  # Extract the anchor ID as an integer
-            anchor_distance_list[key] = float(value)
+            anchor_name, value = anchor.split(":")
+            anchor_distance_list.update({anchor_name: float(value)})
 
-        return tag_id, anchor_distance_list
+        return tag_name, anchor_distance_list
     except Exception as e:
         print(f"Error parsing message: {e}")
         return None, None
 
 class MqttConnection:
-    def __init__(self, username, key, host, port, feed_names, tag_module):
+    def __init__(self, username, key, host, port, feed_names, tag_modules):
         self.username = username
         self.key = key
         self.host = host
@@ -42,7 +41,7 @@ class MqttConnection:
         self.feed_names = feed_names  # Accept a list of feed names
         self.topics = [f'{self.username}/feeds/{feed_name}' for feed_name in self.feed_names]  # Generate topics
         self.client = mqtt.Client()
-        self.tag_module = tag_module
+        self.tag_modules = tag_modules
         self.connected = False
         
         # Set up callbacks
@@ -78,11 +77,13 @@ class MqttConnection:
         print(f'Received message: {msg.payload.decode()} on topic {msg.topic}')
         
         # Parse the message and update the tag module
-        tag_id, anchor_distance_list = parse_mqtt_message(msg.payload.decode())
-        if tag_id and anchor_distance_list:
-            self.tag_module.update(tag_id, anchor_distance_list)
+        tag_name, anchor_distance_list = parse_mqtt_message(msg.payload.decode())
+        if tag_name and anchor_distance_list:
+            # Find the corresponding tag module
+            tag_module = next((tag for tag in self.tag_modules if tag.name == tag_name), None)
+            tag_module.update(name = tag_name, anchor_distance_list = anchor_distance_list)
+            tag_module.calculate_position()
 
-        self.tag_module.calculate_position()
 
     def publish(self, message):
         """Publish a message to the MQTT topic."""
