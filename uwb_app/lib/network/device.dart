@@ -1,20 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 
-String baseUrl = 'http://192.168.1.10:3000/device';
+String baseUrl = 'http://172.16.1.89:3000/device';
 
 class History {
-  final String id;
+  String id;
   final double x;
   final double y;
   final DateTime createdAt;
 
   History({
-    required this.id,
+    this.id = "",
     required this.x,
     required this.y,
-    required this.createdAt,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   factory History.fromJson(Map<String, dynamic> json) {
     return History(
@@ -26,88 +27,17 @@ class History {
   }
 }
 
-class BaseStation {
-  String id;
-  String name;
-  double x;
-  double y;
-  BaseStation({
-    this.id = "",
-    this.name = "",
-    this.x = 0,
-    this.y = 0,
-  });
-
-  factory BaseStation.jsonToBase(Map<String, dynamic> json) {
-    var historiesFromJson = json['histories'] as List;
-
-    dynamic recentHistory;
-    if (historiesFromJson.isNotEmpty) {
-      recentHistory = History.fromJson(historiesFromJson.first);
-    }
-    return BaseStation(
-      id: json['_id'],
-      name: json['name'],
-      x: recentHistory != null ? recentHistory.x : 0,
-      y: recentHistory != null ? recentHistory.y : 0,
-    );
-  }
-}
-
-class BaseStationService {
-  Future<BaseStation> addBaseByName(String baseName) async {
-    final response =
-        await http.post(Uri.parse(baseUrl), body: {"name": baseName});
-    if (response.statusCode == 201) {
-      return BaseStation.jsonToBase(json.decode(response.body));
-    } else {
-      throw Exception('Failed to add device');
-    }
-  }
-
-  Future<BaseStation> updateBaseById(String baseId, double x, double y) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/$baseId'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        "history": {"x": x, "y": y},
-      }),
-    );
-    if (response.statusCode == 200) {
-      return BaseStation.jsonToBase(json.decode(response.body));
-    } else {
-      throw Exception('Failed to update device');
-    }
-  }
-
-  Future<List<BaseStation>> fetchAllBaseStations() async {
-    final response = await http.get(Uri.parse(baseUrl));
-    if (response.statusCode == 200) {
-      List<dynamic> devicesJson = json.decode(response.body);
-      return devicesJson
-          .where((json) =>
-              json['name'] == 'B1' ||
-              json['name'] == 'B2' ||
-              json['name'] == 'B3')
-          .map((json) => BaseStation.jsonToBase(json))
-          .toList();
-    } else {
-      throw Exception('Failed to load devices');
-    }
-  }
-}
-
 class Device {
   String id;
   String name;
   List<dynamic> histories;
   DateTime createdAt;
+  int deviceType;
   DateTime updatedAt;
   String status;
   String location;
   String img;
+  Timer? statusTimer;
 
   Device({
     required this.id,
@@ -115,6 +45,7 @@ class Device {
     required this.histories,
     required this.createdAt,
     required this.updatedAt,
+    required this.deviceType,
     this.status = "Not Active",
     this.location = "#NA",
     this.img = "uwb.png",
@@ -133,6 +64,7 @@ class Device {
         histories: historyList,
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
+        deviceType: json['device_type'],
       );
 
       if (device.histories.isNotEmpty) {
@@ -150,54 +82,46 @@ class Device {
     }
   }
 
-  void defineLocation(List<BaseStation> baseStations) {
-    if (baseStations.isEmpty || histories.isEmpty) {
-      location = "No Base setted up";
+  void resetStatus() {
+    status = "Not Active";
+    location = "#NA";
+    print('Device status reset to Not Active');
+  }
+
+  void updateDeviceStatus(dynamic data) {
+    print('Updating device status with data: $data');
+
+    if (data == null ||
+        !data.containsKey('name') ||
+        !data.containsKey('deviceType') ||
+        !data.containsKey('location')) {
+      print('Invalid data: $data');
       return;
     }
 
-    double x = histories.first.x;
-    double y = histories.first.y;
-    BaseStation b2 = baseStations.firstWhere((element) => element.name == 'B2');
-    BaseStation b3 = baseStations.firstWhere((element) => element.name == 'B3');
-    if (x > 0 && x < b3.x && y > 0 && y < b2.y) {
-      location = "In room";
-      return;
-    }
-    location = "Out of room";
+    double x = data['x'];
+    double y = data['y'];
+
+    History history = History(x: x, y: y);
+    histories.insert(0, history);
+
+    name = data['name'];
+    deviceType = data['deviceType'];
+    status = "Active";
+    location = data['location'];
+
+    statusTimer?.cancel();
+    statusTimer = Timer(const Duration(seconds: 15), () {
+      resetStatus();
+    });
+  }
+
+  void dispose() {
+    statusTimer?.cancel();
   }
 }
 
 class DeviceService {
-  Future<Device> addDeviceByName(String deviceName) async {
-    final response =
-        await http.post(Uri.parse(baseUrl), body: {"name": deviceName});
-    if (response.statusCode == 201) {
-      final res = Device.jsonToDevice(json.decode(response.body));
-      return res;
-    } else {
-      throw Exception('Failed to add device');
-    }
-  }
-
-  Future<Device> updateDeviceById(String deviceId, double x, double y) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/$deviceId'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        "history": {"x": x, "y": y}
-      }),
-    );
-    if (response.statusCode == 200) {
-      final res = Device.jsonToDevice(json.decode(response.body));
-      return res;
-    } else {
-      throw Exception('Failed to update device');
-    }
-  }
-
   Future<Device> fetchDeviceById(String deviceId) async {
     final response = await http.get(Uri.parse('$baseUrl/$deviceId'));
     if (response.statusCode == 200) {
@@ -213,13 +137,7 @@ class DeviceService {
     final response = await http.get(Uri.parse(baseUrl));
     if (response.statusCode == 200) {
       List<dynamic> devicesJson = json.decode(response.body);
-      return devicesJson
-          .where((json) =>
-              json['name'] != 'B1' &&
-              json['name'] != 'B2' &&
-              json['name'] != 'B3')
-          .map((json) => Device.jsonToDevice(json))
-          .toList();
+      return devicesJson.map((json) => Device.jsonToDevice(json)).toList();
     } else {
       throw Exception('Failed to load devices');
     }

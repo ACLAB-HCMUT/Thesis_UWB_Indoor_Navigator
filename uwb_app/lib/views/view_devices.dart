@@ -12,10 +12,9 @@ class ViewDevices extends StatefulWidget {
 }
 
 class _ViewDevicesState extends State<ViewDevices> {
-  ValueNotifier<List<Device>> devicesNotifier = ValueNotifier<List<Device>>([]);
-  List<BaseStation> baseStations = [];
+  List<Device> deviceList = [];
+  ValueNotifier<List<Device>> tagDevices = ValueNotifier<List<Device>>([]);
   final DeviceService deviceService = DeviceService();
-  final BaseStationService baseStationService = BaseStationService();
   final MqttService mqttService = MqttService();
   Timer? _timer;
 
@@ -28,7 +27,6 @@ class _ViewDevicesState extends State<ViewDevices> {
 
   @override
   void dispose() {
-    devicesNotifier.dispose();
     mqttService.disconnect();
     _timer?.cancel();
     super.dispose();
@@ -39,36 +37,39 @@ class _ViewDevicesState extends State<ViewDevices> {
     Listen to Mqtt stream
   */
   Future<void> initialize() async {
-    devicesNotifier.value = await deviceService.fetchAllDevices();
-    baseStations = await baseStationService.fetchAllBaseStations();
-    mqttService.connect().then((_) {
-      mqttService.messageStream.listen((message) {
-        refreshPage();
-      });
-    });
-  }
+    // Fetch all devices from the database
+    loadData();
 
-  /*
-    Fetch data from DB every 5 seconds
-  */
-  Future<void> startPeriodFetch() async {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      refreshPage();
+    // fixing
+    mqttService.connect().then((_) {
+      mqttService.listenFromFeeds((data) {
+        Device device = deviceList.firstWhere((device) {
+          return device.name == data['name'];
+        });
+        device.updateDeviceStatus(data);
+
+        // Reassign the value to notify listeners
+        tagDevices.value = List.from(tagDevices.value);
+      });
     });
   }
 
   /*
     Check if two lists are not equal then refresh the page
   */
-  Future<void> refreshPage() async {
-    baseStations = await baseStationService.fetchAllBaseStations();
-    List<Device> newDevices = await deviceService.fetchAllDevices().then((res) {
-      return res.map((device) {
-        device.defineLocation(baseStations);
-        return device;
-      }).toList();
+  Future<void> loadData() async {
+    deviceList = await deviceService.fetchAllDevices();
+    tagDevices.value =
+        deviceList.where((device) => device.deviceType == 0).toList();
+  }
+
+  /*
+    Refresh UI every 5 seconds
+  */
+  Future<void> startPeriodFetch() async {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      tagDevices.value = List.from(tagDevices.value);
     });
-    devicesNotifier.value = newDevices;
   }
 
   @override
@@ -77,13 +78,13 @@ class _ViewDevicesState extends State<ViewDevices> {
       title: 'Devices',
       home: RefreshIndicator(
         onRefresh: () async {
-          refreshPage();
+          loadData();
         },
         child: Scaffold(
           body: Padding(
             padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
             child: ValueListenableBuilder<List<Device>>(
-              valueListenable: devicesNotifier,
+              valueListenable: tagDevices,
               builder: (context, devicesList, _) {
                 if (devicesList.isEmpty) {
                   return SingleChildScrollView(
