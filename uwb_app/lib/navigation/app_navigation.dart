@@ -4,6 +4,7 @@ import 'package:uwb_app/views/view_devices.dart';
 import 'package:uwb_app/views/view_map.dart';
 import 'package:uwb_app/views/wrapper/main_wrapper.dart';
 import 'package:uwb_app/views/view_device_info.dart';
+import 'package:uwb_app/network/mqtt.dart';
 
 class AppNavigation {
   AppNavigation._();

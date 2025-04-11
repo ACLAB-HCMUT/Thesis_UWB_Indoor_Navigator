@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 
-String baseUrl = 'http://172.16.1.89:3000/device';
+String baseUrl = 'http://192.168.1.11:3000/device';
 
 class History {
   String id;
@@ -49,6 +50,7 @@ class Device {
     this.status = "Not Active",
     this.location = "#NA",
     this.img = "uwb.png",
+    this.statusTimer,
   });
 
   factory Device.jsonToDevice(Map<String, dynamic> json) {
@@ -85,6 +87,8 @@ class Device {
   void resetStatus() {
     status = "Not Active";
     location = "#NA";
+    statusTimer?.cancel();
+    statusTimer = null;
     print('Device status reset to Not Active');
   }
 
@@ -96,7 +100,7 @@ class Device {
         !data.containsKey('deviceType') ||
         !data.containsKey('location')) {
       print('Invalid data: $data');
-      return;
+      throw Exception('Invalid data provided for updating device status');
     }
 
     double x = data['x'];
@@ -110,8 +114,30 @@ class Device {
     status = "Active";
     location = data['location'];
 
+    setTimer(15);
+  }
+
+  Device copyWith() {
+    return Device(
+      id: id,
+      name: name,
+      histories: histories,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      deviceType: deviceType,
+      status: status,
+      location: location,
+      img: img,
+    );
+  }
+
+  void setTimer(int delay) {
+    if (delay == 0) {
+      return;
+    }
+
     statusTimer?.cancel();
-    statusTimer = Timer(const Duration(seconds: 15), () {
+    statusTimer = Timer(Duration(seconds: delay), () {
       resetStatus();
     });
   }

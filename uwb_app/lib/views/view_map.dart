@@ -16,8 +16,6 @@ class ViewMap extends StatefulWidget {
 class _ViewMap extends State<ViewMap> {
   List<Device> devices = [];
   final DeviceService deviceService = DeviceService();
-  List<BaseStation> baseStations = [];
-  BaseStationService baseStationService = BaseStationService();
   final MqttService mqttService = MqttService();
   final Map<String, Point> points = {};
 
@@ -49,39 +47,39 @@ class _ViewMap extends State<ViewMap> {
   }
 
   Future<void> refreshPage() async {
-    baseStations = await baseStationService.fetchAllBaseStations();
-    if (widget.id != null) {
-      devices.clear();
-      Device newDevice = await deviceService.fetchDeviceById(widget.id!);
-      devices.add(newDevice);
-    } else {
-      devices = await deviceService.fetchAllDevices();
-    }
+    //   baseStations = await baseStationService.fetchAllBaseStations();
+    //   if (widget.id != null) {
+    //     devices.clear();
+    //     Device newDevice = await deviceService.fetchDeviceById(widget.id!);
+    //     devices.add(newDevice);
+    //   } else {
+    //     devices = await deviceService.fetchAllDevices();
+    //   }
 
-    for (var base in baseStations) {
-      if (points.containsKey(base.id)) {
-        updatePointPosition(base.id, base.name, base.x, base.y,
-            color: Colors.blue);
-      } else {
-        addPoint(base.id, base.name, base.x, base.y, color: Colors.blue);
-      }
-    }
-    for (var device in devices) {
-      if (points.containsKey(device.id)) {
-        if (device.status == "Active") {
-          updatePointPosition(device.id, device.name, device.histories.first.x,
-              device.histories.first.y,
-              color: Colors.green);
-        } else {
-          updatePointPosition(device.id, device.name, device.histories.first.x,
-              device.histories.first.y,
-              color: Colors.grey);
-        }
-      } else {
-        addPoint(device.id, device.name, device.histories.first.x,
-            device.histories.first.y);
-      }
-    }
+    //   for (var base in baseStations) {
+    //     if (points.containsKey(base.id)) {
+    //       updatePointPosition(base.id, base.name, base.x, base.y,
+    //           color: Colors.blue);
+    //     } else {
+    //       addPoint(base.id, base.name, base.x, base.y, color: Colors.blue);
+    //     }
+    //   }
+    //   for (var device in devices) {
+    //     if (points.containsKey(device.id)) {
+    //       if (device.status == "Active") {
+    //         updatePointPosition(device.id, device.name, device.histories.first.x,
+    //             device.histories.first.y,
+    //             color: Colors.green);
+    //       } else {
+    //         updatePointPosition(device.id, device.name, device.histories.first.x,
+    //             device.histories.first.y,
+    //             color: Colors.grey);
+    //       }
+    //     } else {
+    //       addPoint(device.id, device.name, device.histories.first.x,
+    //           device.histories.first.y);
+    //     }
+    //   }
   }
 
   Future<void> initialize() async {
@@ -153,8 +151,8 @@ class _ViewMap extends State<ViewMap> {
         child: Scaffold(
           body: PositionScatterChart(
             points: points,
-            maxX: (baseStations.isEmpty) ? 10 : baseStations[2].x,
-            maxY: (baseStations.isEmpty) ? 10 : baseStations[1].y,
+            // maxX: (baseStations.isEmpty) ? 10 : baseStations[2].x,
+            // maxY: (baseStations.isEmpty) ? 10 : baseStations[1].y,
           ),
         ),
       ),

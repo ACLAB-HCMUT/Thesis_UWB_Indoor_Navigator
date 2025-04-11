@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
 import 'package:intl/intl.dart';
 import 'package:uwb_app/network/mqtt.dart';
+import 'package:provider/provider.dart';
 
 class ViewDeviceInfo extends StatefulWidget {
   final String id;
@@ -14,11 +15,11 @@ class ViewDeviceInfo extends StatefulWidget {
 }
 
 class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
-  ValueNotifier<Device?> deviceNotifier = ValueNotifier<Device?>(null);
+  // ValueNotifier<Device?> tagModule = ValueNotifier<Device?>(null);
+  List<Device> deviceList = [];
   final DeviceService deviceService = DeviceService();
-  List<BaseStation> baseStations = [];
-  final BaseStationService baseStationService = BaseStationService();
-  final MqttService mqttService = MqttService();
+  late ValueNotifier<List<Device>> tagDevices;
+  late MqttService mqttService;
   Timer? _timer;
 
   @override
@@ -29,27 +30,43 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
   }
 
   Future<void> initialize() async {
-    deviceNotifier.value = await deviceService.fetchDeviceById(widget.id);
-    baseStations = await baseStationService.fetchAllBaseStations();
-    mqttService.messageStream.listen((message) {
-      refreshPage();
-    });
+    // Assign the provider to the variable
+    mqttService = Provider.of<MqttService>(context, listen: false);
+    tagDevices =
+        Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+
+    // // Load the device data
+    // loadData();
+
+    // mqttService.listenFromFeeds((data) {
+    //   if (tagModule.value == null || data['name'] != tagModule.value!.name) {
+    //     return;
+    //   }
+
+    //   Device tempDevice = tagModule.value!.copyWith();
+    //   tempDevice.updateDeviceStatus(data);
+    //   tagModule.value = tempDevice;
+
+    //   tagModule.value!.setTimer(15);
+    // });
   }
 
+  /*
+    Refresh UI every 5 seconds
+  */
   Future<void> startPeriodFetch() async {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      refreshPage();
+      tagDevices.value = List.from(tagDevices.value);
     });
   }
 
-  Future<void> refreshPage() async {
-    baseStations = await baseStationService.fetchAllBaseStations();
-    Device newDevice =
-        await deviceService.fetchDeviceById(widget.id).then((res) {
-      res.defineLocation(baseStations);
-      return res;
-    });
-    deviceNotifier.value = newDevice;
+  /*
+    Check if two lists are not equal then refresh the page
+  */
+  Future<void> loadData() async {
+    deviceList = await deviceService.fetchAllDevices();
+    tagDevices.value =
+        deviceList.where((device) => device.deviceType == 0).toList();
   }
 
   @override
@@ -65,18 +82,20 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
       title: 'Device Info',
       home: RefreshIndicator(
         onRefresh: () async {
-          refreshPage();
+          loadData();
         },
         child: Scaffold(
           body: Padding(
             padding: const EdgeInsets.only(
                 top: 20.0, bottom: 20, left: 10.0, right: 10.0),
-            child: ValueListenableBuilder<Device?>(
-              valueListenable: deviceNotifier,
-              builder: (context, device, _) {
-                if (device == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            child: ValueListenableBuilder<List<Device>>(
+              valueListenable: tagDevices,
+              builder: (context, devicesList, _) {
+                // Find the device with the matching ID
+                final device = devicesList.firstWhere(
+                  (device) => device.id == widget.id,
+                );
+
                 return SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(

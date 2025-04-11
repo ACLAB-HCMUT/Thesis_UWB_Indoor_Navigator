@@ -59,7 +59,6 @@ class MqttService {
     }
 
     subscribeToFeeds();
-    // listenFromFeeds();
     print('Finished connecting to Adafruit IO');
   }
 

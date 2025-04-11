@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
 import 'package:uwb_app/network/mqtt.dart';
+import 'package:provider/provider.dart';
 
 class ViewDevices extends StatefulWidget {
   const ViewDevices({super.key});
@@ -13,9 +14,9 @@ class ViewDevices extends StatefulWidget {
 
 class _ViewDevicesState extends State<ViewDevices> {
   List<Device> deviceList = [];
-  ValueNotifier<List<Device>> tagDevices = ValueNotifier<List<Device>>([]);
   final DeviceService deviceService = DeviceService();
-  final MqttService mqttService = MqttService();
+  late ValueNotifier<List<Device>> tagDevices;
+  late MqttService mqttService;
   Timer? _timer;
 
   @override
@@ -37,10 +38,13 @@ class _ViewDevicesState extends State<ViewDevices> {
     Listen to Mqtt stream
   */
   Future<void> initialize() async {
+    // Assign the provider to the variable
+    mqttService = Provider.of<MqttService>(context, listen: false);
+    tagDevices = Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+
     // Fetch all devices from the database
     loadData();
 
-    // fixing
     mqttService.connect().then((_) {
       mqttService.listenFromFeeds((data) {
         Device device = deviceList.firstWhere((device) {
