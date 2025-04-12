@@ -66,12 +66,45 @@ def update_data_on_db(module):
     
     return
     
+def define_tag_location_status(tag_position, anchor_list):
+    """
+    Check if the tag is inside the polygon formed by the anchors using the ray-casting algorithm.
+    
+    :param tag_position: Tuple (x, y) representing the tag's position.
+    :param anchor_list: List of Anchor objects with x and y coordinates.
+    :return: True if the tag is inside the anchor network, False otherwise.
+    """
+    if not tag_position or len(anchor_list) < 3:
+        # A polygon requires at least 3 anchors
+        return False
 
+    x, y = tag_position
+    n = len(anchor_list)
+    inside = False
+
+    # Loop through each edge of the polygon
+    for i in range(n):
+        # Get the current and next anchor
+        anchor1 = anchor_list[i]
+        anchor2 = anchor_list[(i + 1) % n]  # Wrap around to the first anchor
+
+        x1, y1 = anchor1.x, anchor1.y
+        x2, y2 = anchor2.x, anchor2.y
+
+        # Check if the ray intersects with the edge
+        if ((y1 > y) != (y2 > y)) and (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1):
+            inside = not inside
+
+    if inside:
+        return "In Room"
+    else:
+        return "Out of Room"
+
+# Main function
 try:
     # Set up external connections
     mongoDB_connection = MongoDBConnection(BASE_URL)
     mqtt_connection = MqttConnection(
-    
         username=ADAFRUIT_IO_USERNAME,
         key=ADAFRUIT_IO_KEY,
         host=MQTT_HOST,
@@ -94,11 +127,12 @@ try:
     while True:
         for tag_module in tag_list:
             if tag_module.position:
-                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {tag_module.position[0]} {tag_module.position[1]}; Device_type: 0")
+                # Check if the tag is inside the anchor network
+                tag_location_status = define_tag_location_status(tag_module.position, anchor_list)
+                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {tag_module.position[0]} {tag_module.position[1]}; Device_type: 0; Location: {tag_location_status}")
                 update_data_on_db(tag_module)
                 tag_module.reset()
         time.sleep(1)  # Keep the program alive
             
 except KeyboardInterrupt:
     print("Exiting...")
-    
