@@ -1,9 +1,9 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:uwb_app/views/scatter_chart.dart';
 import 'package:uwb_app/network/mqtt.dart';
 import 'package:uwb_app/network/device.dart';
+import 'package:provider/provider.dart';
 
 class ViewMap extends StatefulWidget {
   final String? id;
@@ -14,10 +14,13 @@ class ViewMap extends StatefulWidget {
 }
 
 class _ViewMap extends State<ViewMap> {
-  List<Device> devices = [];
   final DeviceService deviceService = DeviceService();
-  final MqttService mqttService = MqttService();
-  final Map<String, Point> points = {};
+  late ValueNotifier<List<Device>> deviceList;
+  late MqttService mqttService = MqttService();
+  late ValueNotifier<Map<String, Point>> points =
+      ValueNotifier<Map<String, Point>>({});
+
+  Timer? _timer;
 
   @override
   void initState() {
@@ -38,63 +41,33 @@ class _ViewMap extends State<ViewMap> {
   @override
   void dispose() {
     super.dispose();
+    _timer?.cancel();
   }
 
   void startPeriodFetch() {
-    Timer.periodic(const Duration(seconds: 5), (timer) async {
-      refreshPage();
-    });
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {});
   }
 
-  Future<void> refreshPage() async {
-    //   baseStations = await baseStationService.fetchAllBaseStations();
-    //   if (widget.id != null) {
-    //     devices.clear();
-    //     Device newDevice = await deviceService.fetchDeviceById(widget.id!);
-    //     devices.add(newDevice);
-    //   } else {
-    //     devices = await deviceService.fetchAllDevices();
-    //   }
+  Future<void> loadData() async {
+    //clear all points
+    points.value.clear();
 
-    //   for (var base in baseStations) {
-    //     if (points.containsKey(base.id)) {
-    //       updatePointPosition(base.id, base.name, base.x, base.y,
-    //           color: Colors.blue);
-    //     } else {
-    //       addPoint(base.id, base.name, base.x, base.y, color: Colors.blue);
-    //     }
-    //   }
-    //   for (var device in devices) {
-    //     if (points.containsKey(device.id)) {
-    //       if (device.status == "Active") {
-    //         updatePointPosition(device.id, device.name, device.histories.first.x,
-    //             device.histories.first.y,
-    //             color: Colors.green);
-    //       } else {
-    //         updatePointPosition(device.id, device.name, device.histories.first.x,
-    //             device.histories.first.y,
-    //             color: Colors.grey);
-    //       }
-    //     } else {
-    //       addPoint(device.id, device.name, device.histories.first.x,
-    //           device.histories.first.y);
-    //     }
-    //   }
+    // Fetch data from the database
+    deviceList.value = await deviceService.fetchAllDevices();
   }
 
   Future<void> initialize() async {
-    devices = [];
-    points.clear();
-    refreshPage();
-    mqttService.messageStream.listen((message) {
-      refreshPage();
-    });
+    // Assign the provider to the variable
+    mqttService = Provider.of<MqttService>(context, listen: false);
+    deviceList =
+        Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+    loadData();
   }
 
   // Add a new point
   void addPoint(String id, String name, double x, double y, {Color? color}) {
     setState(() {
-      points[id] = Point(
+      points.value[id] = Point(
         id: id,
         name: name,
         x: x,
@@ -106,21 +79,57 @@ class _ViewMap extends State<ViewMap> {
 
   void updatePointPosition(String id, String name, double newX, double newY,
       {Color? color}) {
-    if (points.containsKey(id)) {
+    if (points.value.containsKey(id)) {
       setState(() {
         if (color != null) {
-          points[id] = points[id]!
+          points.value[id] = points.value[id]!
               .copyWithNewPosition(name, newX, newY, newColor: color);
         } else {
-          points[id] = points[id]!.copyWithNewPosition(name, newX, newY);
+          points.value[id] =
+              points.value[id]!.copyWithNewPosition(name, newX, newY);
         }
       });
     }
   }
 
+  void updatePointsPosition (List<Device> deviceList) {
+        // Init
+    List<Device> tagDevices = [];
+    List<Device> baseDevices = [];
+
+    // Add points to the map
+    for (var base in baseDevices) {
+      if (points.value.containsKey(base.id)) {
+        updatePointPosition(
+            base.id, base.name, base.histories[0].x, base.histories[0].y,
+            color: Colors.blue);
+      } else {
+        addPoint(base.id, base.name, base.histories[0].x, base.histories[0].y,
+            color: Colors.blue);
+      }
+    }
+
+    for (var device in tagDevices) {
+      if (points.value.containsKey(device.id)) {
+        if (device.status == "Active") {
+          updatePointPosition(device.id, device.name, device.histories.first.x,
+              device.histories.first.y,
+              color: Colors.green);
+        } else {
+          updatePointPosition(device.id, device.name, device.histories.first.x,
+              device.histories.first.y,
+              color: Colors.grey);
+        }
+      } else {
+        addPoint(device.id, device.name, device.histories.first.x,
+            device.histories.first.y);
+      }
+    }
+  }
+
   void removePoint(String id) {
     setState(() {
-      points.remove(id);
+      points.value.remove(id);
     });
   }
 
@@ -145,14 +154,16 @@ class _ViewMap extends State<ViewMap> {
       title: 'Map',
       home: RefreshIndicator(
         onRefresh: () async {
-          // print('Refreshing');
           initialize();
         },
         child: Scaffold(
-          body: PositionScatterChart(
-            points: points,
-            // maxX: (baseStations.isEmpty) ? 10 : baseStations[2].x,
-            // maxY: (baseStations.isEmpty) ? 10 : baseStations[1].y,
+          body: ValueListenableBuilder<Map<String, Point>>(
+            valueListenable: points, // Listen to changes in points
+            builder: (context, pointsValue, _) {
+              return PositionScatterChart(
+                points: pointsValue, // Pass the updated points to the chart
+              );
+            },
           ),
         ),
       ),

@@ -15,11 +15,10 @@ class ViewDeviceInfo extends StatefulWidget {
 }
 
 class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
-  // ValueNotifier<Device?> tagModule = ValueNotifier<Device?>(null);
-  List<Device> deviceList = [];
-  final DeviceService deviceService = DeviceService();
-  late ValueNotifier<List<Device>> tagDevices;
   late MqttService mqttService;
+  late ValueNotifier<List<Device>> deviceList;
+  final DeviceService deviceService = DeviceService();
+
   Timer? _timer;
 
   @override
@@ -32,23 +31,8 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
   Future<void> initialize() async {
     // Assign the provider to the variable
     mqttService = Provider.of<MqttService>(context, listen: false);
-    tagDevices =
+    deviceList =
         Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
-
-    // // Load the device data
-    // loadData();
-
-    // mqttService.listenFromFeeds((data) {
-    //   if (tagModule.value == null || data['name'] != tagModule.value!.name) {
-    //     return;
-    //   }
-
-    //   Device tempDevice = tagModule.value!.copyWith();
-    //   tempDevice.updateDeviceStatus(data);
-    //   tagModule.value = tempDevice;
-
-    //   tagModule.value!.setTimer(15);
-    // });
   }
 
   /*
@@ -56,7 +40,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
   */
   Future<void> startPeriodFetch() async {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      tagDevices.value = List.from(tagDevices.value);
+      deviceList.value = List.from(deviceList.value);
     });
   }
 
@@ -64,14 +48,11 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> loadData() async {
-    deviceList = await deviceService.fetchAllDevices();
-    tagDevices.value =
-        deviceList.where((device) => device.deviceType == 0).toList();
+    deviceList.value = await deviceService.fetchAllDevices();
   }
 
   @override
   void dispose() {
-    // deviceNotifier.dispose();
     _timer?.cancel();
     super.dispose();
   }
@@ -89,7 +70,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
             padding: const EdgeInsets.only(
                 top: 20.0, bottom: 20, left: 10.0, right: 10.0),
             child: ValueListenableBuilder<List<Device>>(
-              valueListenable: tagDevices,
+              valueListenable: deviceList,
               builder: (context, devicesList, _) {
                 // Find the device with the matching ID
                 final device = devicesList.firstWhere(
@@ -371,20 +352,20 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                   bottom: 10.0,
                                   left: 10.0,
                                   right: 20.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Device Location on Map',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontFamily: 'Sandra',
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_forward_ios, size: 20),
-                                ],
-                              ),
+                              // child: Row(
+                              //   mainAxisAlignment:
+                              //       MainAxisAlignment.spaceBetween,
+                              //   children: [
+                              //     Text(
+                              //       'Device Location on Map',
+                              //       style: TextStyle(
+                              //         fontSize: 15,
+                              //         fontFamily: 'Sandra',
+                              //       ),
+                              //     ),
+                              //     Icon(Icons.arrow_forward_ios, size: 20),
+                              //   ],
+                              // ),
                             ),
                           ),
                         ),

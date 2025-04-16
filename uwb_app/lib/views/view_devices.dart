@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
 import 'package:uwb_app/network/mqtt.dart';
 import 'package:provider/provider.dart';
+import 'package:uwb_app/views/scatter_chart.dart';
 
 class ViewDevices extends StatefulWidget {
   const ViewDevices({super.key});
@@ -13,11 +14,13 @@ class ViewDevices extends StatefulWidget {
 }
 
 class _ViewDevicesState extends State<ViewDevices> {
-  List<Device> deviceList = [];
   final DeviceService deviceService = DeviceService();
-  late ValueNotifier<List<Device>> tagDevices;
+  late ValueNotifier<List<Device>> deviceList;
   late MqttService mqttService;
+  late ValueNotifier<Map<String, Point>> points =
+    ValueNotifier<Map<String, Point>>({});
   Timer? _timer;
+  
 
   @override
   void initState() {
@@ -40,20 +43,21 @@ class _ViewDevicesState extends State<ViewDevices> {
   Future<void> initialize() async {
     // Assign the provider to the variable
     mqttService = Provider.of<MqttService>(context, listen: false);
-    tagDevices = Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+    deviceList =
+        Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
 
     // Fetch all devices from the database
     loadData();
 
     mqttService.connect().then((_) {
       mqttService.listenFromFeeds((data) {
-        Device device = deviceList.firstWhere((device) {
+        Device device = deviceList.value.firstWhere((device) {
           return device.name == data['name'];
         });
         device.updateDeviceStatus(data);
 
         // Reassign the value to notify listeners
-        tagDevices.value = List.from(tagDevices.value);
+        deviceList.value = List.from(deviceList.value);
       });
     });
   }
@@ -62,9 +66,7 @@ class _ViewDevicesState extends State<ViewDevices> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> loadData() async {
-    deviceList = await deviceService.fetchAllDevices();
-    tagDevices.value =
-        deviceList.where((device) => device.deviceType == 0).toList();
+    deviceList.value = await deviceService.fetchAllDevices();
   }
 
   /*
@@ -72,7 +74,7 @@ class _ViewDevicesState extends State<ViewDevices> {
   */
   Future<void> startPeriodFetch() async {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      tagDevices.value = List.from(tagDevices.value);
+      deviceList.value = List.from(deviceList.value);
     });
   }
 
@@ -88,9 +90,12 @@ class _ViewDevicesState extends State<ViewDevices> {
           body: Padding(
             padding: const EdgeInsets.only(top: 20.0, left: 10.0, right: 10.0),
             child: ValueListenableBuilder<List<Device>>(
-              valueListenable: tagDevices,
-              builder: (context, devicesList, _) {
-                if (devicesList.isEmpty) {
+              valueListenable: deviceList,
+              builder: (context, deviceList, _) {
+                List<Device> tagDevices = deviceList
+                    .where((device) => device.deviceType == 0)
+                    .toList();
+                if (tagDevices.isEmpty) {
                   return SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Container(
@@ -102,7 +107,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                 }
 
                 return GridView.builder(
-                  itemCount: devicesList.length,
+                  itemCount: tagDevices.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 10.0,
@@ -110,7 +115,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                     childAspectRatio: 7 / 8,
                   ),
                   itemBuilder: (context, index) {
-                    final device = devicesList[index];
+                    final device = tagDevices[index];
                     return Card(
                       elevation: 4.0,
                       shape: RoundedRectangleBorder(
