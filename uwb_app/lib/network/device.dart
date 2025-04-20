@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 
-String baseUrl = 'http://192.168.1.11:3000/device';
+String baseUrl = 'http://192.168.1.10:3000/device';
 
 class History {
   String id;

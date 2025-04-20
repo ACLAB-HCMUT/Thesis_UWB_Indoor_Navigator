@@ -5,6 +5,7 @@ import 'package:uwb_app/views/view_map.dart';
 import 'package:uwb_app/views/wrapper/main_wrapper.dart';
 import 'package:uwb_app/views/view_device_info.dart';
 import 'package:uwb_app/network/mqtt.dart';
+import 'package:uwb_app/views/view_map_3d.dart';
 
 class AppNavigation {
   AppNavigation._();
@@ -57,7 +58,7 @@ class AppNavigation {
                     GoRoute(
                       path: '/map-of-room',
                       name: 'MapOfRoom',
-                      builder: (context, state) => ViewMap(),
+                      builder: (context, state) => ViewMap3d(),
                       // builder: (context, state) => ViewMap(id: state.uri.queryParameters['id']),
                     )
                   ])
