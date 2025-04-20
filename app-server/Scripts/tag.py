@@ -52,7 +52,7 @@ class Tag:
         b_vectors = []
         
         for anchor in available_anchors[:-1]:
-            a_vectors.append((anchor.x - ref_anchor.x, anchor.y - ref_anchor.y))
+            a_vectors.append((2*(anchor.x - ref_anchor.x), 2*(anchor.y - ref_anchor.y)))
             b_vectors.append((anchor.x**2 - ref_anchor.x**2) + (anchor.y**2 - ref_anchor.y**2) + (ref_anchor.distance_to_tag**2 - anchor.distance_to_tag**2))
         
         a_vectors = np.array(a_vectors)
@@ -67,7 +67,7 @@ class Tag:
             return None
         
     def reset(self):
-        self.tag_id = None
+        # self.tag_id = None
         self.position = None
         for anchor in self.anchor_list:
             anchor.reset()

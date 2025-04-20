@@ -21,10 +21,9 @@ tag_list = [
     Tag(name="TAG3"),
 ]
 anchor_list = [
-    Anchor(id=0, name="B0", x=0, y=0, distance_to_tag=None),
-    Anchor(id=1, name="B1", x=0, y=5, distance_to_tag=None),
-    Anchor(id=2, name="B2", x=5, y=0, distance_to_tag=None),
-    Anchor(id=3, name="B3", x=5, y=5, distance_to_tag=None),
+    Anchor(id=0, name="B0", x=6.57, y=0, distance_to_tag=None),
+    Anchor(id=1, name="B1", x=3.57, y=0.73, distance_to_tag=None),
+    Anchor(id=2, name="B2", x=6.57, y=7.78, distance_to_tag=None),
 ]
 mongoDB_connection = None
 mqtt_connection = None
@@ -57,12 +56,12 @@ def update_data_on_db(module):
         device_id = tag_module.tag_id
         x, y = tag_module.position
         device_type = 0
-        mongoDB_connection.update_device(device_id, x, y, device_type)
+        mongoDB_connection.update_device(device_id, m_to_dm(x), m_to_dm(y), device_type)
     elif module.name.startswith("B") and module.id:
         device_id = module.id
         x, y = module.x, module.y
         device_type = 1
-        mongoDB_connection.update_device(device_id, x, y, device_type)    
+        mongoDB_connection.update_device(device_id, m_to_dm(x), m_to_dm(y), device_type)    
     
     return
     
@@ -100,6 +99,10 @@ def define_tag_location_status(tag_position, anchor_list):
     else:
         return "Out of Room"
 
+# m to dm convertor
+def m_to_dm(meters):
+    return meters * 10
+
 # Main function
 try:
     # Set up external connections
@@ -120,7 +123,7 @@ try:
     for anchor in anchor_list:
         for tag_module in tag_list:
             tag_module.add_anchor(anchor)
-        mqtt_connection.publish(f"Name: {anchor.name}; Coordinate: {anchor.x} {anchor.y}; Device_type: 1")
+        mqtt_connection.publish(f"Name: {anchor.name}; Coordinate: {m_to_dm(anchor.x)} {m_to_dm(anchor.y)}; Device_type: 1")
         update_data_on_db(anchor)
         time.sleep(1)
 
@@ -129,7 +132,7 @@ try:
             if tag_module.position:
                 # Check if the tag is inside the anchor network
                 tag_location_status = define_tag_location_status(tag_module.position, anchor_list)
-                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {tag_module.position[0]} {tag_module.position[1]}; Device_type: 0; Location: {tag_location_status}")
+                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_location_status}")
                 update_data_on_db(tag_module)
                 tag_module.reset()
         time.sleep(1)  # Keep the program alive
