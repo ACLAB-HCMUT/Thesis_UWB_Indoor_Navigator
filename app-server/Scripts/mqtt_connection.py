@@ -79,6 +79,10 @@ class MqttConnection:
         # Parse the message and update the tag module
         tag_name, anchor_distance_list = parse_mqtt_message(msg.payload.decode())
         if tag_name and anchor_distance_list:
+            if all(value==0 for value in anchor_distance_list.values()):
+                print(f"Tag {tag_name} has no distance data")
+                return None
+            
             # Find the corresponding tag module
             tag_module = next((tag for tag in self.tag_modules if tag.name == tag_name), None)
             tag_module.update(name = tag_name, anchor_distance_list = anchor_distance_list)
