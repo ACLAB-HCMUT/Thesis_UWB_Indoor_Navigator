@@ -1,5 +1,7 @@
 import time
-
+import requests
+import json
+import socket
 from mqtt_connection import MqttConnection
 from tag import Tag
 from anchor import Anchor
@@ -11,8 +13,6 @@ ADAFRUIT_IO_KEY = ''
 MQTT_HOST = 'io.adafruit.com'
 MQTT_PORT = 1883
 FEED_NAMES = ['T2B_distances', 'coordinate']
-
-BASE_URL = 'http://localhost:3000/device'
 
 # Prepare global variables
 tag_list = [
@@ -103,10 +103,59 @@ def define_tag_location_status(tag_position, anchor_list):
 def m_to_dm(meters):
     return meters * 10
 
+# get local ip address
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Doesn't have to be reachable
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return f'http://{ip}:3000/device'
+
+# Update the JSON blob with the public IP address
+def update_to_json_blob(base_url):
+    blob_id = '1364243377205469184'
+    url = f'https://jsonblob.com/api/jsonBlob/{blob_id}'
+    
+    # Your new JSON data
+    data = {
+        "base_url": base_url,
+        "username": ADAFRUIT_IO_USERNAME,
+        "password": ADAFRUIT_IO_KEY
+    }
+    
+    # Send the PUT request
+    response = requests.put(
+        url,
+        headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        data=json.dumps(data)
+    )
+    
+    # Check the response
+    if response.status_code == 200:
+        print("JSON Blob updated successfully.")
+        print("Updated data:", response.json())
+    elif response.status_code == 404:
+        print("Blob not found. Please check the Blob ID.")
+    else:
+        print(f"Failed to update JSON Blob. Status code: {response.status_code}")
+        print("Response:", response.text)
+
 # Main function
 try:
+    #Set up and public ip address and mqtt connection to JsonBlob
+    base_url = get_local_ip()
+    update_to_json_blob (base_url)
+    
     # Set up external connections
-    mongoDB_connection = MongoDBConnection(BASE_URL)
+    mongoDB_connection = MongoDBConnection(base_url)
     mqtt_connection = MqttConnection(
         username=ADAFRUIT_IO_USERNAME,
         key=ADAFRUIT_IO_KEY,
