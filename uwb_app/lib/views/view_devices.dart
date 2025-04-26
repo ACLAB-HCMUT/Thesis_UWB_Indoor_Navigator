@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uwb_app/network/device.dart';
@@ -15,12 +16,17 @@ class ViewDevices extends StatefulWidget {
 
 class _ViewDevicesState extends State<ViewDevices> {
   final DeviceService deviceService = DeviceService();
+  final JsonBlob jsonBlob = JsonBlob(
+    localIP: localIP,
+    username: 'admin',
+    password: 'admin',
+  );
   late ValueNotifier<List<Device>> deviceList;
   late MqttService mqttService;
   late ValueNotifier<Map<String, Point>> points =
-    ValueNotifier<Map<String, Point>>({});
+      ValueNotifier<Map<String, Point>>({});
+  late ValueNotifier<String> newUrl;
   Timer? _timer;
-  
 
   @override
   void initState() {
@@ -45,11 +51,21 @@ class _ViewDevicesState extends State<ViewDevices> {
     mqttService = Provider.of<MqttService>(context, listen: false);
     deviceList =
         Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+    newUrl = Provider.of<ValueNotifier<String>>(context,
+        listen:
+            false); // Fetch data from the database and connect to the MQTT server
+
+    await jsonBlob.getJsonFromBlob().then((value) {
+      if (value != null) {
+        localIP = value.localIP;
+        newUrl.value = 'http://${value.localIP}:3000/device';
+      }
+    });
 
     // Fetch all devices from the database
     loadData();
 
-    mqttService.connect().then((_) {
+    mqttService.connect(localIP).then((_) {
       mqttService.listenFromFeeds((data) {
         Device device = deviceList.value.firstWhere((device) {
           return device.name == data['name'];
@@ -66,7 +82,7 @@ class _ViewDevicesState extends State<ViewDevices> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> loadData() async {
-    deviceList.value = await deviceService.fetchAllDevices();
+    deviceList.value = await deviceService.fetchAllDevices(newUrl.value);
   }
 
   /*

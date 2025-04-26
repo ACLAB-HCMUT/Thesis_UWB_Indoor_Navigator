@@ -10,7 +10,7 @@ def parse_mqtt_message(message, height=0.75):
     Parse the MQTT message and return the tag ID and anchor list.
     Message format: [TAG1:{an0:12.1,an1:12.2,an2:12.3}]
     Returns:
-        name (str): THe name of the tag (e.g., "TAG1").
+        name (str): The name of the tag (e.g., "TAG1").
         anchor_distance_list (dict): A dictionary of anchors and their values (e.g., {"an0": 12.1, "an1": 12.2, "an2": 12.3}).
     """
     try:

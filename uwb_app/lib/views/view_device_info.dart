@@ -17,6 +17,7 @@ class ViewDeviceInfo extends StatefulWidget {
 class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
   late MqttService mqttService;
   late ValueNotifier<List<Device>> deviceList;
+  late ValueNotifier<String> newUrl;
   final DeviceService deviceService = DeviceService();
 
   Timer? _timer;
@@ -33,6 +34,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
     mqttService = Provider.of<MqttService>(context, listen: false);
     deviceList =
         Provider.of<ValueNotifier<List<Device>>>(context, listen: false);
+    newUrl = Provider.of<ValueNotifier<String>>(context, listen: false);
   }
 
   /*
@@ -48,7 +50,7 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> loadData() async {
-    deviceList.value = await deviceService.fetchAllDevices();
+    deviceList.value = await deviceService.fetchAllDevices(newUrl.value);
   }
 
   @override

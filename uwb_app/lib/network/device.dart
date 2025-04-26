@@ -3,7 +3,45 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 
-String baseUrl = 'http://192.168.1.10:3000/device';
+String baseUrl = 'http://172.28.182.136:3000/device';
+String localIP = '127.0.0.1';
+String blobId = '1364243377205469184';
+
+class JsonBlob {
+  final String localIP;
+  final String username;
+  final String password;
+
+  JsonBlob({
+    required this.localIP,
+    required this.username,
+    required this.password,
+  });
+
+  factory JsonBlob.fromJson(Map<String, dynamic> json) {
+    return JsonBlob(
+      localIP: json['local_ip'],
+      username: json['username'],
+      password: json['password'],
+    );
+  }
+
+  Future<JsonBlob?> getJsonFromBlob() async {
+    final blobUrl = 'http://jsonblob.com/api/jsonBlob/$blobId';
+    final response = await http.get(Uri.parse(blobUrl.trim()), headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      return JsonBlob.fromJson(jsonData);
+    } else {
+      print('Error: ${response.statusCode}');
+      return null;
+    }
+  }
+}
 
 class History {
   String id;
@@ -159,7 +197,10 @@ class DeviceService {
     }
   }
 
-  Future<List<Device>> fetchAllDevices() async {
+  Future<List<Device>> fetchAllDevices([String? newUrl]) async {
+    if (newUrl != null) {
+      baseUrl = newUrl;
+    }
     final response = await http.get(Uri.parse(baseUrl));
     if (response.statusCode == 200) {
       List<dynamic> devicesJson = json.decode(response.body);

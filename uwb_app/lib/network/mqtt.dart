@@ -18,14 +18,14 @@ class MqttService {
 
   MqttService() {
     // fetchAllData();
-    client = MqttServerClient(broker, '');
   }
 
   Future<void> fetchAllData() async {
     devices = await deviceService.fetchAllDevices();
   }
 
-  Future<void> connect() async {
+  Future<void> connect(String broker) async {
+    client = MqttServerClient(broker, '');
     client.port = port;
     client.secure = false;
     client.logging(on: true);
@@ -34,10 +34,10 @@ class MqttService {
     final connMessage = MqttConnectMessage()
         .withClientIdentifier(
             'flutter_mqtt_client') // Unique identifier for the client
-        .withWillTopic('willtopic') // Optional last-will topic
-        .withWillMessage('Connection closed')
+        // .withWillTopic('willtopic') // Optional last-will topic
+        // .withWillMessage('Connection closed')
         .startClean() // Clean session
-        .authenticateAs(username, aioKey) // Authentication
+        // .authenticateAs(username, aioKey) // Authentication
         .withWillQos(MqttQos.atMostOnce);
     client.connectionMessage = connMessage;
 

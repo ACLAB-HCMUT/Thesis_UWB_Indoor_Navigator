@@ -21,6 +21,9 @@ void main() {
           value: ValueNotifier<ValueNotifier<Map<String, Point>>>(
               ValueNotifier<Map<String, Point>>({})),
         ),
+        ValueListenableProvider<ValueNotifier<String>>.value(
+          value: ValueNotifier<ValueNotifier<String>>(ValueNotifier<String>("")),
+        ),
       ],
       child: const MyApp(),
     ),

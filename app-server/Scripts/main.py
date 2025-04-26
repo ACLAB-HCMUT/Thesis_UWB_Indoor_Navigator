@@ -2,15 +2,18 @@ import time
 import requests
 import json
 import socket
+import subprocess
+from pathlib import Path
 from mqtt_connection import MqttConnection
 from tag import Tag
 from anchor import Anchor
 from mongoDB_connection import MongoDBConnection
 
-ADAFRUIT_IO_USERNAME = ''
+ADAFRUIT_IO_USERNAME = 'aclab241'
 ADAFRUIT_IO_KEY = ''
+MOSQUITTO_PATH = 'C:\Program Files\mosquitto'
 
-MQTT_HOST = 'io.adafruit.com'
+MQTT_HOST = '127.0.0.1'
 MQTT_PORT = 1883
 FEED_NAMES = ['T2B_distances', 'coordinate']
 
@@ -33,6 +36,29 @@ room_corner_list = [
 ]
 mongoDB_connection = None
 mqtt_connection = None
+
+# Initialize Mosquitto broker
+def find_and_run_bat(mosquitto_path, bat_filename="run_mosquitto.bat"):
+    try:
+        # Check if Mosquitto is already running
+        result = subprocess.run(['tasklist'], capture_output=True, text=True)
+        if 'mosquitto.exe' in result.stdout:
+            print("Mosquitto is already running.")
+            return
+    except Exception as e:
+        print(f"Error checking Mosquitto process: {e}")
+        return
+    
+    bat_file = next(Path('.').rglob(bat_filename), None)
+    if not bat_file:
+        print(f"{bat_filename} not found.")
+        return
+
+    result = subprocess.run([str(bat_file), mosquitto_path], shell=True)
+    if result.returncode == 0:
+        print(f"Successfully ran {bat_filename}.")
+    else:
+        print(f"Failed to run {bat_filename}. Return code: {result.returncode}")
 
 def load_data_from_db():
     devices = mongoDB_connection.fetch_devices()
@@ -113,16 +139,16 @@ def get_local_ip():
         ip = '127.0.0.1'
     finally:
         s.close()
-    return f'http://{ip}:3000/device'
+    return ip
 
 # Update the JSON blob with the public IP address
-def update_to_json_blob(base_url):
+def update_to_json_blob(local_ip):
     blob_id = '1364243377205469184'
     url = f'https://jsonblob.com/api/jsonBlob/{blob_id}'
     
     # Your new JSON data
     data = {
-        "base_url": base_url,
+        "local_ip": local_ip,
         "username": ADAFRUIT_IO_USERNAME,
         "password": ADAFRUIT_IO_KEY
     }
@@ -150,15 +176,21 @@ def update_to_json_blob(base_url):
 # Main function
 try:
     #Set up and public ip address and mqtt connection to JsonBlob
-    base_url = get_local_ip()
-    update_to_json_blob (base_url)
+    local_ip = get_local_ip()
+    base_url = f'http://{local_ip}:3000/device'
+    update_to_json_blob (local_ip)
+    
+    # Start Mosquitto broker
+    find_and_run_bat(MOSQUITTO_PATH, "run_mosquitto.bat")
+    
+
     
     # Set up external connections
     mongoDB_connection = MongoDBConnection(base_url)
     mqtt_connection = MqttConnection(
         username=ADAFRUIT_IO_USERNAME,
         key=ADAFRUIT_IO_KEY,
-        host=MQTT_HOST,
+        host=local_ip,
         port=MQTT_PORT,
         feed_names=FEED_NAMES,
         tag_modules=tag_list
