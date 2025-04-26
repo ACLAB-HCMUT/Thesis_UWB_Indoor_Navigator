@@ -21,9 +21,15 @@ tag_list = [
     Tag(name="TAG3"),
 ]
 anchor_list = [
-    Anchor(id=0, name="B0", x=6.57, y=0, distance_to_tag=None),
-    Anchor(id=1, name="B1", x=3.57, y=0.73, distance_to_tag=None),
-    Anchor(id=2, name="B2", x=6.57, y=7.78, distance_to_tag=None),
+    Anchor(id=0, name="B0", x=6.57, y=0.15, distance_to_tag=None),
+    Anchor(id=1, name="B1", x=3.57, y=0.2, distance_to_tag=None),
+    Anchor(id=2, name="B2", x=6.57, y=7.74, distance_to_tag=None),
+]
+room_corner_list = [
+    Anchor(id=0, name="C0", x=0, y=0, distance_to_tag=None),
+    Anchor(id=1, name="C1", x=10.39, y=0, distance_to_tag=None),
+    Anchor(id=2, name="C2", x=0, y=7.99, distance_to_tag=None),
+    Anchor(id=2, name="C3", x=10.39, y=7.99, distance_to_tag=None),
 ]
 mongoDB_connection = None
 mqtt_connection = None
@@ -65,36 +71,29 @@ def update_data_on_db(module):
     
     return
     
-def define_tag_location_status(tag_position, anchor_list):
+def define_tag_location_status(tag_position, room_corner_list):
     """
-    Check if the tag is inside the polygon formed by the anchors using the ray-casting algorithm.
-    
+    Check if the tag is inside the rectangle defined by the room corners by comparing x and y ranges.
+
     :param tag_position: Tuple (x, y) representing the tag's position.
-    :param anchor_list: List of Anchor objects with x and y coordinates.
-    :return: True if the tag is inside the anchor network, False otherwise.
+    :param room_corner_list: List of 4 Anchor objects defining a rectangle.
+    :return: "In Room" if inside, "Out of Room" otherwise.
     """
-    if not tag_position or len(anchor_list) < 3:
-        # A polygon requires at least 3 anchors
-        return False
+    if not tag_position or len(room_corner_list) != 4:
+        return "Out of Room"
 
     x, y = tag_position
-    n = len(anchor_list)
-    inside = False
 
-    # Loop through each edge of the polygon
-    for i in range(n):
-        # Get the current and next anchor
-        anchor1 = anchor_list[i]
-        anchor2 = anchor_list[(i + 1) % n]  # Wrap around to the first anchor
+    # Extract all x and y from corners
+    xs = [corner.x for corner in room_corner_list]
+    ys = [corner.y for corner in room_corner_list]
 
-        x1, y1 = anchor1.x, anchor1.y
-        x2, y2 = anchor2.x, anchor2.y
+    # Find min and max
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
 
-        # Check if the ray intersects with the edge
-        if ((y1 > y) != (y2 > y)) and (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1):
-            inside = not inside
-
-    if inside:
+    # Compare directly
+    if min_x <= x <= max_x and min_y <= y <= max_y:
         return "In Room"
     else:
         return "Out of Room"
@@ -180,7 +179,7 @@ try:
         for tag_module in tag_list:
             if tag_module.position:
                 # Check if the tag is inside the anchor network
-                tag_location_status = define_tag_location_status(tag_module.position, anchor_list)
+                tag_location_status = define_tag_location_status(tag_module.position, room_corner_list)
                 mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_location_status}")
                 update_data_on_db(tag_module)
                 tag_module.reset()
