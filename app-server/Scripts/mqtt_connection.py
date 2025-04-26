@@ -1,10 +1,11 @@
 import paho.mqtt.client as mqtt
 import re
 import time
+import math
 
 from anchor import Anchor
 
-def parse_mqtt_message(message):
+def parse_mqtt_message(message, height=0.75):
     """
     Parse the MQTT message and return the tag ID and anchor list.
     Message format: [TAG1:{an0:12.1,an1:12.2,an2:12.3}]
@@ -23,9 +24,12 @@ def parse_mqtt_message(message):
         anchor_data = match.group(2)
 
         anchor_distance_list = {}
-        for anchor in anchor_data.split(","):
-            anchor_name, value = anchor.split(":")
-            anchor_distance_list.update({anchor_name: float(value)})
+        for anchor in anchor_data.split(","):               #pytago
+            anchor_name, hypotenuse_str = anchor.split(":", 1)
+            hypotenuse = float(hypotenuse_str.strip())
+            base = math.sqrt(max(hypotenuse**2 - height**2, 0))
+            anchor_distance_list[anchor_name.strip()] = round(base, 2)
+            print(anchor_distance_list[anchor_name.strip()])
 
         return tag_name, anchor_distance_list
     except Exception as e:
