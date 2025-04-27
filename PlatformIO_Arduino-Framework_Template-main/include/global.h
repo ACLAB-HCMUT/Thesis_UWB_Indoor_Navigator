@@ -26,5 +26,6 @@
 
 //declare global variables
 extern int mqttConnectedSignal;
+extern String local_ip;
 
 #endif

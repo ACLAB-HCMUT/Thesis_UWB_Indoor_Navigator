@@ -3,6 +3,6 @@
 
 #include "global.h"
 
-String getJsonBlob();
+void jsonBlobTask();
 
 #endif
