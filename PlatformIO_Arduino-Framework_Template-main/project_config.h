@@ -5,3 +5,5 @@
 #define AIO_SERVERPORT 1883
 #define AIO_USERNAME "your_name"
 #define AIO_KEY "your_key"
+
+#define JSONBLOB_ID "1364243377205469184"
