@@ -17,6 +17,7 @@
 #include "mqtt_support.h"
 
 //declare global variables
+extern int mqttConnectedSignal;
 
 
 #endif

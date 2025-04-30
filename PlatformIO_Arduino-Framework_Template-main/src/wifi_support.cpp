@@ -1,4 +1,5 @@
 #include "wifi_support.h"
+#include "../project_config.h"
 
 const char* ssid = PROJECT_WIFI_SSID;
 const char* password = PROJECT_WIFI_PASSWORD;
