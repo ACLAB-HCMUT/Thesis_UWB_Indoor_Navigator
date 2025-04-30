@@ -9,7 +9,15 @@ class MongoDBConnection:
             response = requests.get(self.url)
             if response.status_code == 200:
                 data = response.json()
-                devices = [{"id": device["_id"], "name": device["name"]} for device in data]
+                devices = [
+                    {
+                        "id": device["_id"],
+                        "name": device["name"],
+                        "device_type": device["device_type"],
+                        "position": [device["histories"][0]["x"], device["histories"][0]["y"]] if device.get("histories") and len(device["histories"]) > 0 else None
+                    }
+                    for device in data
+                ]
                 return devices
             else:
                 print(f'Failed to fetch data. Status code: {response.status_code}')

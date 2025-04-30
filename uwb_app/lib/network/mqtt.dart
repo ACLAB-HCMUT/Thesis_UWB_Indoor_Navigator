@@ -7,7 +7,7 @@ import 'package:uwb_app/network/device.dart';
 class MqttService {
   final String broker = 'io.adafruit.com';
   final int port = 1883;
-  final String username = '';
+  final String username = 'aclab241';
   final String aioKey = '';
   final Logger logger = Logger('MqttService');
   final List<String> topics = ['coordinate'];
@@ -85,7 +85,8 @@ class MqttService {
 
         // Parse the payload to extract the data
         final regex = RegExp(
-            r'Name: (\w+); Coordinate: ([\d.]+) ([\d.]+); Device_type: ([\d.]+); Location: (.+)');
+            r'Name: (\w+); Coordinate: ([\d.]+) ([\d.]+); Device_type: ([\d.]+); Location: (.+); Status: (.+)');
+        // Example payload: "Name: Device1; Coordinate: 12.34 56.78; Device_type: 1; Location: Room1; Status: Active"
         final match = regex.firstMatch(payload);
         if (match == null) return;
 
@@ -94,6 +95,7 @@ class MqttService {
         final y = double.parse(match.group(3)!);
         final deviceType = int.parse(match.group(4)!);
         final location = match.group(5)!;
+        final activeStatus = match.group(6)!;
 
         final response = {
           'name': name,
@@ -101,6 +103,7 @@ class MqttService {
           'y': y,
           'deviceType': deviceType,
           'location': location,
+          'activeStatus': activeStatus,
         };
 
         onDataUpdate(response);

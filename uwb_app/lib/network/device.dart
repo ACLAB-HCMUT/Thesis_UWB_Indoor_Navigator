@@ -76,7 +76,6 @@ class Device {
   String status;
   String location;
   String img;
-  Timer? statusTimer;
 
   Device({
     required this.id,
@@ -88,7 +87,6 @@ class Device {
     this.status = "Not Active",
     this.location = "#NA",
     this.img = "uwb.png",
-    this.statusTimer,
   });
 
   factory Device.jsonToDevice(Map<String, dynamic> json) {
@@ -106,28 +104,11 @@ class Device {
         updatedAt: DateTime.parse(json['updatedAt']),
         deviceType: json['device_type'],
       );
-
-      if (device.histories.isNotEmpty) {
-        DateTime lastTime = device.histories.first.createdAt;
-        Duration difference = DateTime.now().difference(lastTime);
-        if (difference.inSeconds <= 30) {
-          device.status = "Active";
-        }
-      }
-
       return device;
     } catch (e) {
       print('Error parsing device JSON: $e');
       rethrow;
     }
-  }
-
-  void resetStatus() {
-    status = "Not Active";
-    location = "#NA";
-    statusTimer?.cancel();
-    statusTimer = null;
-    print('Device status reset to Not Active');
   }
 
   void updateDeviceStatus(dynamic data) {
@@ -149,10 +130,12 @@ class Device {
 
     name = data['name'];
     deviceType = data['deviceType'];
-    status = "Active";
     location = data['location'];
-
-    setTimer(15);
+    if (data['activeStatus'] == "False") {
+      status = "Not Active";
+    } else {
+      status = "Active";
+    }
   }
 
   Device copyWith() {
@@ -167,21 +150,6 @@ class Device {
       location: location,
       img: img,
     );
-  }
-
-  void setTimer(int delay) {
-    if (delay == 0) {
-      return;
-    }
-
-    statusTimer?.cancel();
-    statusTimer = Timer(Duration(seconds: delay), () {
-      resetStatus();
-    });
-  }
-
-  void dispose() {
-    statusTimer?.cancel();
   }
 }
 

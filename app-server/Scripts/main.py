@@ -18,11 +18,8 @@ MQTT_PORT = 1883
 FEED_NAMES = ['T2B_distances', 'coordinate']
 
 # Prepare global variables
-tag_list = [
-    Tag(name="TAG1"),
-    Tag(name="TAG2"),
-    Tag(name="TAG3"),
-]
+tag_list = []
+
 anchor_list = [
     Anchor(id=0, name="B0", x=6.57, y=0.15, distance_to_tag=None),
     Anchor(id=1, name="B1", x=3.57, y=0.2, distance_to_tag=None),
@@ -31,8 +28,8 @@ anchor_list = [
 room_corner_list = [
     Anchor(id=0, name="C0", x=0, y=0, distance_to_tag=None),
     Anchor(id=1, name="C1", x=10.39, y=0, distance_to_tag=None),
-    Anchor(id=2, name="C2", x=0, y=7.99, distance_to_tag=None),
-    Anchor(id=2, name="C3", x=10.39, y=7.99, distance_to_tag=None),
+    Anchor(id=2, name="C2", x=10.39, y=7.99, distance_to_tag=None),
+    Anchor(id=3, name="C3", x=0, y=7.99, distance_to_tag=None),
 ]
 mongoDB_connection = None
 mqtt_connection = None
@@ -64,21 +61,14 @@ def load_data_from_db():
     devices = mongoDB_connection.fetch_devices()
     if devices:
         for device in devices:
-            device_id = device["id"]
-            device_name = device["name"]
-            
-            if device_name.startswith("TAG"):
-                tag_module = next ((tag for tag in tag_list if tag.name == device_name), None)
-                if tag_module:
-                    tag_module.tag_id = device_id
-                    tag_module.name = device_name
-                    tag_module.position = None
-                    
-            elif device_name.startswith("B"):
-                anchor_module = next ((anchor for anchor in anchor_list if anchor.name == device_name), None)
+            if device["device_type"] == 1:
+                anchor_module = next ((anchor for anchor in anchor_list if anchor.name == device["name"]), None)
                 if anchor_module:
-                    anchor_module.id = device_id
-                    anchor_module.name = device_name
+                    anchor_module.id = device["id"]
+            elif device["device_type"] == 0:
+                tag_module = Tag(tag_id=device["id"], name=device["name"], position=device["position"])
+                tag_list.append(tag_module)
+
     else:
         print("No devices found in the database.")
     return
@@ -97,32 +87,7 @@ def update_data_on_db(module):
     
     return
     
-def define_tag_location_status(tag_position, room_corner_list):
-    """
-    Check if the tag is inside the rectangle defined by the room corners by comparing x and y ranges.
 
-    :param tag_position: Tuple (x, y) representing the tag's position.
-    :param room_corner_list: List of 4 Anchor objects defining a rectangle.
-    :return: "In Room" if inside, "Out of Room" otherwise.
-    """
-    if not tag_position or len(room_corner_list) != 4:
-        return "Out of Room"
-
-    x, y = tag_position
-
-    # Extract all x and y from corners
-    xs = [corner.x for corner in room_corner_list]
-    ys = [corner.y for corner in room_corner_list]
-
-    # Find min and max
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-
-    # Compare directly
-    if min_x <= x <= max_x and min_y <= y <= max_y:
-        return "In Room"
-    else:
-        return "Out of Room"
 
 # m to dm convertor
 def m_to_dm(meters):
@@ -183,10 +148,12 @@ try:
     # Start Mosquitto broker
     find_and_run_bat(MOSQUITTO_PATH, "run_mosquitto.bat")
     
-
-    
     # Set up external connections
     mongoDB_connection = MongoDBConnection(base_url)
+    
+    # Set up id for each module
+    load_data_from_db()
+    
     mqtt_connection = MqttConnection(
         username=ADAFRUIT_IO_USERNAME,
         key=ADAFRUIT_IO_KEY,
@@ -196,23 +163,24 @@ try:
         tag_modules=tag_list
     )
     
-    # Set up id for each module
-    load_data_from_db()
-    
     # Add anchors to the tag module
     for anchor in anchor_list:
         for tag_module in tag_list:
             tag_module.add_anchor(anchor)
         mqtt_connection.publish(f"Name: {anchor.name}; Coordinate: {m_to_dm(anchor.x)} {m_to_dm(anchor.y)}; Device_type: 1")
         update_data_on_db(anchor)
-        time.sleep(1)
+        # time.sleep(1)
 
     while True:
         for tag_module in tag_list:
-            if tag_module.position:
+            if tag_module.active:
+                tag_module.check_active()
+                if tag_module.active == False:
+                    mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_module.location_status}; Status: {tag_module.active}")
+            if tag_module.current_update:
                 # Check if the tag is inside the anchor network
-                tag_location_status = define_tag_location_status(tag_module.position, room_corner_list)
-                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_location_status}")
+                tag_module.define_tag_location_status(room_corner_list)
+                mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_module.location_status}; Status: {tag_module.active}")
                 update_data_on_db(tag_module)
                 tag_module.reset()
         time.sleep(1)  # Keep the program alive

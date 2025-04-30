@@ -1,14 +1,18 @@
 import numpy as np
-
+import time
 from anchor import Anchor
 
 class Tag:
-    def __init__(self, tag_id=None, name=None, anchor_list=None):
+    def __init__(self, tag_id=None, name=None, position=None, anchor_list=None):
         self.tag_id = tag_id
         self.name = name
-        self.position = None
+        self.position = position
         self.anchor_list = anchor_list if anchor_list is not None else []  # Ensure it's always a list
-
+        self.current_update = False
+        self.location_status = "N/A"
+        self.last_update = None
+        self.active = False
+        
     def update(self, tag_id = None, name=None,  anchor_distance_list = None):
         if tag_id: 
             self.tag_id = tag_id
@@ -61,13 +65,59 @@ class Tag:
         try:
             position = np.linalg.lstsq(a_vectors, b_vectors, rcond=None)[0]  # Solve for x (position)
             self.position = (float(round(position[0], 1)), float(round(position[1], 1)))
+            # Change status to current update
             return self.position
         except np.linalg.LinAlgError as e:
             print(f"Error calculating position: {e}")
             return None
         
+    def define_tag_location_status(self, room_corner_list):
+        """
+        Check if the tag is inside the polygon defined by room_corner_list using the ray-casting algorithm.
+        """
+        if not self.position or len(room_corner_list) < 3:
+            self.location_status = "Out of Room"
+            return self.location_status
+
+        x, y = self.position
+        num_vertices = len(room_corner_list)
+        inside = False
+
+        p1 = room_corner_list[0]
+        for i in range(1, num_vertices + 1):
+            p2 = room_corner_list[i % num_vertices]
+            if y > min(p1.y, p2.y):
+                if y <= max(p1.y, p2.y):
+                    if x <= max(p1.x, p2.x):
+                        if p1.y != p2.y:
+                            x_intersection = (y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x
+                        else:
+                            x_intersection = p1.x
+                        if p1.x == p2.x or x <= x_intersection:
+                            inside = not inside
+            p1 = p2
+
+        self.location_status = "In Room" if inside else "Out of Room"
+        return self.location_status
+        
+    def check_active(self, timeout=15):
+        """
+        Check if the tag is active based on the last update time and timeout.
+        """
+        # The device was never active, so it is not active now.
+        if self.last_update is None:
+            self.active = False
+            return
+
+        # Check if the last update was more than the timeout seconds ago
+        if time.time() - self.last_update > timeout:
+            self.last_update = None
+            self.active = False
+        else:
+            self.active = True
+            
     def reset(self):
         # self.tag_id = None
-        self.position = None
+        self.current_update = False
         for anchor in self.anchor_list:
             anchor.reset()

@@ -91,7 +91,9 @@ class MqttConnection:
             tag_module = next((tag for tag in self.tag_modules if tag.name == tag_name), None)
             tag_module.update(name = tag_name, anchor_distance_list = anchor_distance_list)
             tag_module.calculate_position()
-
+            tag_module.active = True
+            tag_module.last_update = time.time()
+            tag_module.current_update = True
 
     def publish(self, message):
         """Publish a message to the MQTT topic."""
