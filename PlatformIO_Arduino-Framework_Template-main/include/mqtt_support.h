@@ -6,6 +6,6 @@
 void mqttTask(void *pvParameters);
 void publishCoordinate(String data);
 extern WiFiClient client;
-extern PubSubClient mqtt;
+extern Adafruit_MQTT_Client mqtt;
 
 #endif

@@ -1,8 +1,8 @@
-#ifndef SERVER_SUPPORT_H
-#define SERVER_SUPPORT_H
+#ifndef JSONBLOB_H
+#define JSONBLOB_H
 
 #include "global.h"
 
-void jsonBlobTask();
+void jsonBlobTask(void *pvParameters);
 
 #endif

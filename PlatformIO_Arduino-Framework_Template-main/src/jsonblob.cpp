@@ -1,15 +1,18 @@
 #include "jsonblob.h"
+#include "../project_config.h"
 
-void jsonBlobTask() {
+String local_ip = "";
+void jsonBlobTask(void *pvParameters) {
     while (local_ip == "") {
         Serial.println("Waiting for local IP...");
-        String url = "https://jsonblob.com/api/jsonBlob/" + JSONBLOB_ID;
+        String url = "https://jsonblob.com/api/jsonBlob/1364243377205469184";
         HTTPClient http;
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
         http.addHeader("Accept", "application/json");
         int httpCode = http.GET();
         String payload;
+        Serial.println("bgin");
         if (httpCode == 200) {
             String payload = http.getString();
             StaticJsonDocument<256> doc;
