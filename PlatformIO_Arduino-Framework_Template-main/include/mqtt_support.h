@@ -3,9 +3,7 @@
 
 #include "global.h"
 
-void mqttTask(void *pvParameters);
-void publishCoordinate(String data);
-extern WiFiClient client;
-extern Adafruit_MQTT_Client mqtt;
+void mqttTask(Adafruit_MQTT_Client* mqtt);
+void publishCoordinate(Adafruit_MQTT_Client* mqtt, Adafruit_MQTT_Publish coordinate, String coordinateValue);
 
 #endif

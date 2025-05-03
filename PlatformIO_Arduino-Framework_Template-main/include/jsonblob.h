@@ -3,6 +3,6 @@
 
 #include "global.h"
 
-void jsonBlobTask(void *pvParameters);
+String jsonBlobTask(void *pvParameters);
 
 #endif

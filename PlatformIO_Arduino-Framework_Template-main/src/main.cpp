@@ -1,6 +1,11 @@
 #include "global.h"
 #include <M5Stack.h>
 #include <Adafruit_NeoPixel.h>
+#include "../project_config.h"
+
+WiFiClient client;
+Adafruit_MQTT_Client* mqtt = nullptr;
+Adafruit_MQTT_Publish* coordinate = nullptr;
 
 // Define the NeoPixel data pin and the number of pixels
 #define PIN_NEOPIXEL 27  // GPIO 27 on M5Stack Atom Lite
@@ -8,7 +13,6 @@
 
 // Create a NeoPixel object
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
-int mqttConnectedSignal = 0;
 String DATA  = " ";  // Used to store distance data
 int UWB_MODE = 0;    // Used to set UWB mode
 
@@ -169,9 +173,14 @@ void setup() {
     UWB_setupmode();
     UWB_Timer();
     Serial2.write("AT+RST\r\n");
-    
     xTaskCreate(wifiTask, "WiFiTask", 4096, NULL, 1, NULL);
-    xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
+    String local_ip = jsonBlobTask(NULL);
+    // xTaskCreate(mqttTask, "MQTTTask", 4096, NULL, 1, NULL);
+
+    mqtt = new Adafruit_MQTT_Client(&client, local_ip.c_str(), AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
+    coordinate = new Adafruit_MQTT_Publish(mqtt, AIO_USERNAME "/feeds/T2B_distances");   
+    mqttTask(mqtt);
+    
 }
 
 void loop() {
@@ -188,7 +197,7 @@ void loop() {
         // calculateTagPosition();
         // delay(50000);
         if(distancesList[0] != 0 & distancesList[1] != 0 & distancesList[2] != 0)
-            publishCoordinate(DATA);
+            publishCoordinate(mqtt, *coordinate, DATA.c_str());
     }
     for (int i = 0; i < 3; i++) {
         distancesList[i] = 0.0;
@@ -196,4 +205,5 @@ void loop() {
     tagPos[0] = 0.0;
     tagPos[1] = 0.0;
     distanceNumber = 0;
+    delay(1000);
 }
