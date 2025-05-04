@@ -15,22 +15,18 @@ MOSQUITTO_PATH = 'C:\Program Files\mosquitto'
 
 MQTT_HOST = '127.0.0.1'
 MQTT_PORT = 1883
-FEED_NAMES = ['T2B_distances', 'coordinate']
+FEED_NAMES = ['T2B_distances', 'coordinate', 'edit_anchors']
 
 # Prepare global variables
 tag_list = []
-
-anchor_list = [
-    Anchor(id=0, name="B0", x=6.57, y=0.15, distance_to_tag=None),
-    Anchor(id=1, name="B1", x=3.57, y=0.2, distance_to_tag=None),
-    Anchor(id=2, name="B2", x=6.57, y=7.74, distance_to_tag=None),
-]
+anchor_list = []
 room_corner_list = [
     Anchor(id=0, name="C0", x=0, y=0, distance_to_tag=None),
     Anchor(id=1, name="C1", x=10.39, y=0, distance_to_tag=None),
     Anchor(id=2, name="C2", x=10.39, y=7.99, distance_to_tag=None),
     Anchor(id=3, name="C3", x=0, y=7.99, distance_to_tag=None),
 ]
+
 mongoDB_connection = None
 mqtt_connection = None
 
@@ -57,14 +53,22 @@ def find_and_run_bat(mosquitto_path, bat_filename="run_mosquitto.bat"):
     else:
         print(f"Failed to run {bat_filename}. Return code: {result.returncode}")
 
-def load_data_from_db():
+def load_data_from_db(only_anchors = False):
     devices = mongoDB_connection.fetch_devices()
+    
+    if devices and only_anchors:
+        anchor_list.clear()
+        for device in devices:
+            if device["device_type"] == 1:
+                anchor_module = Anchor(id=device["id"], name=device["name"], x=device["position"][0], y=device["position"][1])
+                anchor_list.append(anchor_module)
+        return
+    
     if devices:
         for device in devices:
             if device["device_type"] == 1:
-                anchor_module = next ((anchor for anchor in anchor_list if anchor.name == device["name"]), None)
-                if anchor_module:
-                    anchor_module.id = device["id"]
+                anchor_module = Anchor(id=device["id"], name=device["name"], x=device["position"][0], y=device["position"][1])
+                anchor_list.append(anchor_module)
             elif device["device_type"] == 0:
                 tag_module = Tag(tag_id=device["id"], name=device["name"], position=device["position"])
                 tag_list.append(tag_module)
@@ -79,12 +83,19 @@ def update_data_on_db(module):
         x, y = tag_module.position
         device_type = 0
         mongoDB_connection.update_device(device_id, m_to_dm(x), m_to_dm(y), device_type)
-    elif module.name.startswith("B") and module.id:
+    elif module.name.startswith("B"):
+        name = module.name
         device_id = module.id
         x, y = module.x, module.y
         device_type = 1
-        mongoDB_connection.update_device(device_id, m_to_dm(x), m_to_dm(y), device_type)    
-    
+        if (module.current_update_method == "Update") and module.id:
+            mongoDB_connection.update_device(device_id, m_to_dm(x), m_to_dm(y), device_type)    
+        elif (module.current_update_method == "Create"):
+            response_data = mongoDB_connection.create_device(name, device_type)
+            if response_data:
+                mongoDB_connection.update_device(response_data["_id"], m_to_dm(x), m_to_dm(y), device_type)
+        elif (module.current_update_method == "Delete") and module.id :
+            mongoDB_connection.delete_device(device_id)
     return
     
 
@@ -160,7 +171,8 @@ try:
         host=local_ip,
         port=MQTT_PORT,
         feed_names=FEED_NAMES,
-        tag_modules=tag_list
+        tag_modules=tag_list,
+        anchor_modules=anchor_list
     )
     
     # Add anchors to the tag module
@@ -183,6 +195,12 @@ try:
                 mqtt_connection.publish(f"Name: {tag_module.name}; Coordinate: {m_to_dm(tag_module.position[0])} {m_to_dm(tag_module.position[1])}; Device_type: 0; Location: {tag_module.location_status}; Status: {tag_module.active}")
                 update_data_on_db(tag_module)
                 tag_module.reset()
+                
+        for anchor_module in anchor_list:
+            if anchor_module.current_update_method:
+                update_data_on_db(anchor_module)
+                anchor_module.reset_htpps_method()
+                load_data_from_db(True)
         time.sleep(1)  # Keep the program alive
             
 except KeyboardInterrupt:

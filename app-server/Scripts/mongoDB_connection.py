@@ -46,3 +46,39 @@ class MongoDBConnection:
                 print(f"Response: {response.text}")
         except requests.exceptions.RequestException as e:
             print(f"Error occurred while updating device {device_id}: {e}")
+            
+    def create_device(self, name, device_type):
+        url = self.url
+        
+        payload = {
+            "name": name,
+            "device_type": device_type
+        }
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+            if response.status_code == 201:
+                print (f"Device {name} created successfully.")
+                return response.json()
+            else:
+                print(f"Failed to create device {name}. Status code: {response.status_code}")
+                print(f"Response: {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error occurred while creating device {name}: {e}")
+            
+    def delete_device(self, device_id):
+        url = f"{self.url}/{device_id}"
+        
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.delete(url, headers=headers)
+            if response.status_code == 200:
+                print (f"Device {device_id} deleted successfully.")
+                return response.json()
+            else:
+                print(f"Failed to delete device {device_id}. Status code: {response.status_code}")
+                print(f"Response: {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error occurred while deleting device {device_id}: {e}")

@@ -133,7 +133,7 @@ class Device {
     location = data['location'];
     if (data['activeStatus'] == "False") {
       status = "Not Active";
-    } else {
+    } else if (data['activeStatus'] == "True") {
       status = "Active";
     }
   }

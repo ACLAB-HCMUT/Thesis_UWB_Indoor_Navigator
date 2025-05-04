@@ -108,10 +108,10 @@ class _ViewDevicesState extends State<ViewDevices> {
             child: ValueListenableBuilder<List<Device>>(
               valueListenable: deviceList,
               builder: (context, deviceList, _) {
-                List<Device> tagDevices = deviceList
-                    .where((device) => device.deviceType == 0)
-                    .toList();
-                if (tagDevices.isEmpty) {
+                // List<Device> tagDevices = deviceList
+                //     .where((device) => device.deviceType == 0)
+                //     .toList();
+                if (deviceList.isEmpty) {
                   return SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Container(
@@ -123,7 +123,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                 }
 
                 return GridView.builder(
-                  itemCount: tagDevices.length,
+                  itemCount: deviceList.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 10.0,
@@ -131,7 +131,7 @@ class _ViewDevicesState extends State<ViewDevices> {
                     childAspectRatio: 7 / 8,
                   ),
                   itemBuilder: (context, index) {
-                    final device = tagDevices[index];
+                    final device = deviceList[index];
                     return Card(
                       elevation: 4.0,
                       shape: RoundedRectangleBorder(
@@ -217,6 +217,69 @@ class _ViewDevicesState extends State<ViewDevices> {
                 );
               },
             ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  String name = '';
+                  String tempX = '';
+                  String tempY = '';
+                  return AlertDialog(
+                    title: const Text(
+                      "Adding new anchor",
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontFamily: 'Sandra',
+                      ),
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          decoration:
+                              const InputDecoration(labelText: 'Device Name'),
+                          onChanged: (value) => name = value,
+                        ),
+                        const SizedBox(height: 7),
+                        TextField(
+                          decoration:
+                              const InputDecoration(labelText: 'X Coordinate'),
+                          onChanged: (value) => tempX = value,
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          decoration:
+                              const InputDecoration(labelText: 'Y Coordinate'),
+                          onChanged: (value) => tempY = value,
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          mqttService.publish(
+                            'edit_anchors',
+                            'Create',
+                            name,
+                            tempX,
+                            tempY,
+                          );
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Create'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: const Icon(Icons.add),
           ),
         ),
       ),

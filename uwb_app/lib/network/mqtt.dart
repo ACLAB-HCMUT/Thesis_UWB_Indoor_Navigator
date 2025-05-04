@@ -10,7 +10,7 @@ class MqttService {
   final String username = 'aclab241';
   final String aioKey = '';
   final Logger logger = Logger('MqttService');
-  final List<String> topics = ['coordinate'];
+  final List<String> topics = ['coordinate', 'edit_anchors'];
   late MqttServerClient client;
   List<Device> devices = [];
   DeviceService deviceService = DeviceService();
@@ -71,6 +71,7 @@ class MqttService {
     }
   }
 
+  // Listen on feed coordinate (no edit_anchors)
   void listenFromFeeds(Function(Map<String, dynamic>) onDataUpdate) {
     print('Listening for messages from subscribed feeds...');
     client.updates!
@@ -109,6 +110,25 @@ class MqttService {
         onDataUpdate(response);
       }
     });
+  }
+
+  // publish edit_anchors
+  void publish(String topic, String method, String deviceName, String x_value,
+      String y_value) {
+    if (topic.isEmpty) {
+      print('Topic or payload is empty. Cannot publish.');
+      return;
+    }
+    if (topic == 'edit_anchors') {
+      final String fullTopic = '$username/feeds/$topic';
+      final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
+      String payload =
+          "Method: $method; Device_name: $deviceName; x-value: ${x_value}; y-value: ${y_value}";
+
+      builder.addString(payload);
+      client.publishMessage(fullTopic, MqttQos.atLeastOnce, builder.payload!);
+      print('Published message to $fullTopic: $payload');
+    }
   }
 
   Future<void> disconnect() async {

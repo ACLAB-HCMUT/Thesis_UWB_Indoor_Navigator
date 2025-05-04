@@ -100,6 +100,106 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                           height: 120,
                         ),
                       ),
+                      if (device.deviceType == 1)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      String tempX =
+                                          device.histories[0].x.toString();
+                                      String tempY =
+                                          device.histories[0].y.toString();
+                                      final xController =
+                                          TextEditingController(text: tempX);
+                                      final yController =
+                                          TextEditingController(text: tempY);
+                                      return AlertDialog(
+                                        title: Text(
+                                          "Editing device ${device.name}",
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            fontFamily: 'Sandra',
+                                          ),
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              controller: xController,
+                                              decoration: const InputDecoration(
+                                                labelText:
+                                                    "x-value (in meters)",
+                                              ),
+                                              onChanged: (value) {
+                                                tempX = value;
+                                              },
+                                            ),
+                                            const SizedBox(height: 10),
+                                            TextField(
+                                              controller: yController,
+                                              decoration: const InputDecoration(
+                                                labelText:
+                                                    'y-value (in meters)',
+                                              ),
+                                              onChanged: (value) {
+                                                tempY = value;
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              var newData = {
+                                                'name': device.name,
+                                                'x': double.tryParse(tempX) ??
+                                                    device.histories[0].x,
+                                                'y': double.tryParse(tempY) ??
+                                                    device.histories[0].y,
+                                                'deviceType': device.deviceType,
+                                                'location': device.location,
+                                                'status': device.status,
+                                              };
+                                              device
+                                                  .updateDeviceStatus(newData);
+                                              mqttService.publish(
+                                                  'edit_anchors',
+                                                  "Update",
+                                                  newData['name'],
+                                                  newData['x'].toString(),
+                                                  newData['y'].toString());
+                                              Navigator.of(context).pop();
+                                            },
+                                            child: const Text('Save'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  mqttService.publish("edit_anchors", "Delete",
+                                      device.name, "0", "0");
+                                  deviceList.value.removeWhere(
+                                      (device) => device.id == widget.id);
+                                  // refresh the device list
+                                  context.goNamed('Devices');
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 20),
                       // Device Name
                       Text(
