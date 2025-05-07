@@ -86,7 +86,7 @@ class Device {
     required this.deviceType,
     this.status = "Not Active",
     this.location = "#NA",
-    this.img = "uwb.png",
+    required this.img,
   });
 
   factory Device.jsonToDevice(Map<String, dynamic> json) {
@@ -96,6 +96,21 @@ class Device {
       List<History> historyList =
           historiesFromJson.map((i) => History.fromJson(i)).toList();
 
+      int deviceType = json['device_type'];
+
+      // Choose image based on deviceType
+      String img;
+      switch (deviceType) {
+        case 0:
+          img = 'uwb_tag.png';
+          break;
+        case 1:
+          img = 'uwb_anchor.png';
+          break;
+        default:
+          img = 'uwb_tag.png';
+      }
+
       Device device = Device(
         id: json['_id'],
         name: json['name'],
@@ -103,6 +118,7 @@ class Device {
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
         deviceType: json['device_type'],
+        img: img,
       );
       return device;
     } catch (e) {

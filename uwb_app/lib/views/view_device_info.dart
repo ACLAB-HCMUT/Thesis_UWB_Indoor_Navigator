@@ -113,9 +113,11 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                     context: context,
                                     builder: (context) {
                                       String tempX =
-                                          device.histories[0].x.toString();
+                                          (device.histories[0].x / 10)
+                                              .toString();
                                       String tempY =
-                                          device.histories[0].y.toString();
+                                          (device.histories[0].y / 10)
+                                              .toString();
                                       final xController =
                                           TextEditingController(text: tempX);
                                       final yController =
@@ -394,7 +396,8 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                                   child: SizedBox(
                                                     height: 30,
                                                     child: Center(
-                                                      child: Text(activity.x
+                                                      child: Text((activity.x /
+                                                                  10)
                                                               ?.toString() ??
                                                           'N/A'),
                                                     ),
@@ -406,7 +409,8 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                                   child: SizedBox(
                                                     height: 30,
                                                     child: Center(
-                                                      child: Text(activity.y
+                                                      child: Text((activity.y /
+                                                                  10)
                                                               ?.toString() ??
                                                           'N/A'),
                                                     ),

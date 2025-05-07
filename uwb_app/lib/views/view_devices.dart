@@ -82,7 +82,24 @@ class _ViewDevicesState extends State<ViewDevices> {
     Check if two lists are not equal then refresh the page
   */
   Future<void> loadData() async {
-    deviceList.value = await deviceService.fetchAllDevices(newUrl.value);
+    List<Device> devices = await deviceService.fetchAllDevices(newUrl.value);
+
+    // Take the first 30 histories from each device
+    for (var device in devices) {
+      if (device.histories.length > 30) {
+        device.histories.removeRange(30, device.histories.length);
+      }
+    }
+
+    // Sort devices by deviceType and name
+    devices.sort((a, b) {
+      if (a.deviceType != b.deviceType) {
+        return a.deviceType.compareTo(b.deviceType);
+      }
+      return a.name.compareTo(b.name);
+    });
+
+    deviceList.value = devices;
   }
 
   /*
@@ -108,9 +125,6 @@ class _ViewDevicesState extends State<ViewDevices> {
             child: ValueListenableBuilder<List<Device>>(
               valueListenable: deviceList,
               builder: (context, deviceList, _) {
-                // List<Device> tagDevices = deviceList
-                //     .where((device) => device.deviceType == 0)
-                //     .toList();
                 if (deviceList.isEmpty) {
                   return SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -143,38 +157,41 @@ class _ViewDevicesState extends State<ViewDevices> {
                         },
                         child: Column(
                           children: [
-                            Align(
-                              alignment: Alignment.topLeft,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        top: 10.0, left: 15.0),
-                                    width: 10.0,
-                                    height: 10.0,
-                                    decoration: BoxDecoration(
-                                      color: device.status == 'Active'
-                                          ? Colors.green
-                                          : Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5.0),
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 10.0),
-                                    child: Text(
-                                      device.status,
-                                      style: TextStyle(
-                                        fontSize: 12.0,
+                            if (device.deviceType == 0)
+                              Align(
+                                alignment: Alignment.topLeft,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      margin: const EdgeInsets.only(
+                                          top: 10.0, left: 15.0),
+                                      width: 10.0,
+                                      height: 10.0,
+                                      decoration: BoxDecoration(
                                         color: device.status == 'Active'
                                             ? Colors.green
                                             : Colors.red,
+                                        shape: BoxShape.circle,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                    const SizedBox(width: 5.0),
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 10.0),
+                                      child: Text(
+                                        device.status,
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          color: device.status == 'Active'
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (device.deviceType == 1)
+                              const SizedBox(height: 32),
                             // Device Image
                             Image(
                               image: AssetImage('assets/${device.img}'),
@@ -200,13 +217,21 @@ class _ViewDevicesState extends State<ViewDevices> {
                               alignment: Alignment.topLeft,
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 15.0),
-                                child: Text(
-                                  device.location,
-                                  style: const TextStyle(
-                                    fontSize: 12.0,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                child: device.deviceType == 0
+                                    ? Text(
+                                        device.location,
+                                        style: const TextStyle(
+                                          fontSize: 12.0,
+                                          color: Colors.grey,
+                                        ),
+                                      )
+                                    : Text(
+                                        '(${(device.histories[0].x / 10).toStringAsFixed(1)}, ${(device.histories[0].y / 10).toStringAsFixed(1)})',
+                                        style: const TextStyle(
+                                          fontSize: 12.0,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
