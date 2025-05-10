@@ -86,7 +86,7 @@ class MqttService {
 
         // Parse the payload to extract the data
         final regex = RegExp(
-            r'Name: (\w+); Coordinate: ([\d.]+) ([\d.]+); Device_type: ([\d.]+); Location: (.+); Status: (.+)');
+            r'Name: (\w+); Coordinate: ([\d\.\-]+) ([\d\.\-]+); Device_type: (\d+); Location: (.*?); Status: (.+)');
         // Example payload: "Name: Device1; Coordinate: 12.34 56.78; Device_type: 1; Location: Room1; Status: Active"
         final match = regex.firstMatch(payload);
         if (match == null) return;
