@@ -397,9 +397,8 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                                     height: 30,
                                                     child: Center(
                                                       child: Text((activity.x /
-                                                                  10)
-                                                              ?.toString() ??
-                                                          'N/A'),
+                                                              10)
+                                                          .toStringAsFixed(1)),
                                                     ),
                                                   ),
                                                 ),
@@ -410,9 +409,8 @@ class _ViewDeviceInfoState extends State<ViewDeviceInfo> {
                                                     height: 30,
                                                     child: Center(
                                                       child: Text((activity.y /
-                                                                  10)
-                                                              ?.toString() ??
-                                                          'N/A'),
+                                                              10)
+                                                          .toStringAsFixed(1)),
                                                     ),
                                                   ),
                                                 ),
